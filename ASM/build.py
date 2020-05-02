@@ -1,34 +1,47 @@
 #!/usr/bin/env python3
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
 
 import argparse
 import json
-import os
 import re
 from subprocess import check_call as call
 from rom_diff import create_diff
+from ntype import BigStream
+from crc import calculate_crc
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--pj64sym', help="Output path for PJ64 debugging symbols")
 parser.add_argument('--compile-c', action='store_true', help="Recompile C modules")
+parser.add_argument('--dump-obj', action='store_true', help="Dumps extra object info for debugging purposes. Does nothing without --compile-c")
+parser.add_argument('--diff-only', action='store_true', help="Creates diff output without running armips")
 
 args = parser.parse_args()
 pj64_sym_path = args.pj64sym
 compile_c = args.compile_c
+dump_obj = args.dump_obj
+diff_only = args.diff_only
 
-script_dir = os.path.dirname(os.path.realpath(__file__))
-run_dir = script_dir + '/..'
-os.chdir(run_dir)
+root_dir = os.path.dirname(os.path.realpath(__file__))
+tools_dir = os.path.join(root_dir, 'tools')
+os.environ['PATH'] = tools_dir + os.pathsep + os.environ['PATH']
+
+run_dir = root_dir
 
 # Compile code
 
-os.environ['PATH'] = script_dir + os.pathsep + os.environ['PATH']
-
+os.chdir(run_dir)
 if compile_c:
-    os.chdir(run_dir + '/c')
-    call(['make'])
+    clist = ['make']
+    if dump_obj:
+        clist.append('RUN_OBJDUMP=1')
+    call(clist)
 
-os.chdir(run_dir + '/src')
-call(['armips', '-sym2', '../build/asm_symbols.txt', 'build.asm'])
+if not diff_only:
+    os.chdir(run_dir + '/src')
+    call(['armips', '-sym2', '../build/asm_symbols.txt', 'build.asm'])
+
 os.chdir(run_dir)
 
 with open('build/asm_symbols.txt', 'rb') as f:
@@ -101,6 +114,13 @@ if pj64_sym_path:
         key = lambda pair: pair[1]['address']
         for sym_name, sym in sorted(symbols.items(), key=key):
             f.write('{0},{1},{2}\n'.format(sym['address'], sym['type'], sym_name))
+
+
+with open('roms/patched.z64', 'r+b') as stream:
+    buffer = bytearray(stream.read(0x101000))
+    crc = calculate_crc(BigStream(buffer))
+    stream.seek(0x10)
+    stream.write(bytearray(crc))
 
 # Diff ROMs
 create_diff('roms/base.z64', 'roms/patched.z64', '../data/generated/rom_patch.txt')

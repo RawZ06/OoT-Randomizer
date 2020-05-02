@@ -101,7 +101,7 @@
             "Outside Deku Tree": "is_adult or 'Showed Mido Sword & Shield'",
             "Lost Woods": "True",
             "Lost Woods Bridge From Forest": "can_leave_forest",
-            "Kokiri Forest Storms Grotto": "can_play(Song_of_Storms)"
+            "Kokiri Forest Storms Grotto": "can_open_storm_grotto"
         }
     },
     {
@@ -115,7 +115,7 @@
             #repeatable access.
             "Deku Baba Sticks": "(is_adult and not entrance_shuffle) or Kokiri_Sword or Boomerang",
             "Deku Baba Nuts": "
-                (is_adult and not entrance_shuffle) or has_slingshot or has_sticks or 
+                (is_adult and not entrance_shuffle) or Slingshot or Sticks or 
                 has_explosives or Kokiri_Sword or can_use(Dins_Fire)",
             "Deku Tree Gossip Stone (Left)": "True",
             "Deku Tree Gossip Stone (Right)": "True"
@@ -204,7 +204,7 @@
         },
         "locations": {
             "Skull Kid": "is_child and can_play(Sarias_Song)",
-            "Ocarina Memory Game": "is_child and has_ocarina",
+            "Ocarina Memory Game": "is_child and Ocarina",
             "Target in Woods": "can_use(Slingshot)",
             "LW Deku Scrub Deku Stick Upgrade": "is_child and can_stun_deku",
             "GS Lost Woods Bean Patch Near Bridge": "can_plant_bugs and can_child_attack",
@@ -265,9 +265,9 @@
         "exits": {
             "Lost Woods Beyond Mido": "True",
             "Sacred Forest Meadow": "
-                is_adult or has_slingshot or has_sticks or 
+                is_adult or Slingshot or Sticks or 
                 Kokiri_Sword or can_use(Dins_Fire)",
-            "Front of Meadow Grotto": "can_blast_or_smash"
+            "Front of Meadow Grotto": "can_open_bomb_grotto"
         }
     },
     {
@@ -287,7 +287,7 @@
             "Sacred Forest Meadow Entryway": "True",
             "Forest Temple Entrance Ledge": "can_use(Hookshot)",
             "Meadow Fairy Grotto": "True",
-            "Meadow Storms Grotto": "can_play(Song_of_Storms)"
+            "Meadow Storms Grotto": "can_open_storm_grotto"
         }
     },
     {
@@ -326,11 +326,9 @@
         "hint": "Hyrule Field",
         "time_passes": true,
         "locations": {
-            "Ocarina of Time": "
-                is_child and has_all_stones and guarantee_hint",
-            "Song from Ocarina of Time": "
-                is_child and has_all_stones and guarantee_hint",
-            "Big Poe Kill": "can_use(Bow) and can_use(Epona) and has_bottle"
+            "Ocarina of Time": "is_child and has_all_stones",
+            "Song from Ocarina of Time": "is_child and has_all_stones",
+            "Big Poe Kill": "can_use(Bow) and can_ride_epona and has_bottle"
         },
         "exits": {
             "Lost Woods Bridge": "True",
@@ -342,13 +340,13 @@
             "Lon Lon Ranch": "True",
             "Remote Southern Grotto": "here(can_blast_or_smash)",
             "Field Near Lake Outside Fence Grotto": "True",
-            "Field Near Lake Inside Fence Grotto": "can_blast_or_smash",
-            "Field Valley Grotto": "can_use(Hammer) or (is_child and has_explosives)",
+            "Field Near Lake Inside Fence Grotto": "can_open_bomb_grotto",
+            "Field Valley Grotto": "(can_use(Hammer) or is_child) and can_open_bomb_grotto",
                                    # There is a hammerable boulder as adult which is not there as child
             "Field West Castle Town Grotto": "here(can_blast_or_smash)",
             "Field Far West Castle Town Grotto": "here(can_blast_or_smash)",
-            "Field Kakariko Grotto": "can_blast_or_smash",
-            "Field North Lon Lon Grotto": "can_blast_or_smash"
+            "Field Kakariko Grotto": "can_open_bomb_grotto",
+            "Field North Lon Lon Grotto": "can_open_bomb_grotto"
         }
     },
     {
@@ -357,7 +355,7 @@
         "hint": "Lake Hylia",
         "time_passes": true,
         "events": {
-            "Bonooru": "is_child and has_ocarina"
+            "Bonooru": "is_child and Ocarina"
         },
         "locations": {
             "Pierre": "is_adult and Bonooru and not free_scarecrow",
@@ -370,7 +368,7 @@
             "GS Lake Hylia Bean Patch": "can_plant_bugs and can_child_attack",
             "GS Lake Hylia Lab Wall": "
                 is_child and (Boomerang or 
-                    (logic_lab_wall_gs and (has_sticks or Kokiri_Sword))) and at_night",
+                    (logic_lab_wall_gs and (Sticks or Kokiri_Sword))) and at_night",
             "GS Lake Hylia Small Island": "is_child and can_child_attack and at_night",
             "GS Lake Hylia Giant Tree": "can_use(Longshot) and at_night",
             "Lake Hylia Lab Gossip Stone": "True",
@@ -457,7 +455,7 @@
             "Gerudo Valley Grotto Ledge": "True",
             "Gerudo Valley Far Side": "
                 is_adult and 
-                (can_use(Epona) or can_use(Longshot) or gerudo_fortress == 'open' or 'Carpenter Rescue')"
+                (can_ride_epona or can_use(Longshot) or gerudo_fortress == 'open' or 'Carpenter Rescue')"
         }
     },
     {
@@ -527,12 +525,12 @@
             "Gerudo Valley Upper Stream": "True",
             "Gerudo Valley Crate Ledge": "
                 logic_valley_crate_hovers and can_use(Hover_Boots) and
-                (damage_multiplier != 'ohko' or has_fairy or can_use(Nayrus_Love))",
+                (damage_multiplier != 'ohko' or Fairy or can_use(Nayrus_Love))",
             "Gerudo Valley": "
-                is_child or can_use(Epona) or can_use(Longshot) or
+                is_child or can_ride_epona or can_use(Longshot) or
                 gerudo_fortress == 'open' or 'Carpenter Rescue'",
             "Carpenter Tent": "is_adult", # Invisible as child so not in logic
-            "Gerudo Valley Storms Grotto": "is_adult and can_play(Song_of_Storms)" # Not there as child
+            "Gerudo Valley Storms Grotto": "is_adult and can_open_storm_grotto" # Not there as child
         }
     },
     {
@@ -554,9 +552,9 @@
             "Gerudo Fortress Rooftop Chest": "
                 can_use(Hover_Boots) or can_use(Scarecrow) or can_use(Longshot)",
             "Horseback Archery 1000 Points": "
-                Gerudo_Membership_Card and can_use(Epona) and Bow and at_day",
+                Gerudo_Membership_Card and can_ride_epona and Bow and at_day",
             "Horseback Archery 1500 Points": "
-                Gerudo_Membership_Card and can_use(Epona) and Bow and at_day",
+                Gerudo_Membership_Card and can_ride_epona and Bow and at_day",
             "Gerudo Fortress North F1 Carpenter": "is_adult or Kokiri_Sword",
             "Gerudo Fortress North F2 Carpenter": "
                 (is_adult or Kokiri_Sword) and 
@@ -576,7 +574,7 @@
             "Gerudo Valley Far Side": "True",
             "Gerudo Fortress Outside Gate": "'Gerudo Fortress Gate Open'",
             "Gerudo Training Grounds Lobby": "Gerudo_Membership_Card and is_adult",
-            "Gerudo Fortress Storms Grotto": "is_adult and can_play(Song_of_Storms)" # Not there as child
+            "Gerudo Fortress Storms Grotto": "is_adult and can_open_storm_grotto" # Not there as child
         }
     },
     {
@@ -606,7 +604,7 @@
             "Haunted Wasteland Structure Chest": "has_fire_source",
             "Haunted Wasteland Bombchu Salesman": "
                 Progressive_Wallet and 
-                (is_adult or has_sticks or Kokiri_Sword)",
+                (is_adult or Sticks or Kokiri_Sword)",
             "GS Wasteland Ruins": "can_use(Hookshot) or can_use(Boomerang)",
             "Fairy Pot": "has_bottle",
             "Nut Pot": "True"
@@ -777,7 +775,7 @@
             "Castle Grounds": "True",
             "Hyrule Castle Garden": "Weird_Egg or (not shuffle_weird_egg)",
             "Hyrule Castle Fairy": "has_explosives",
-            "Castle Storms Grotto": "can_play(Song_of_Storms)"
+            "Castle Storms Grotto": "can_open_storm_grotto"
         }
     },
     {
@@ -834,8 +832,7 @@
         "locations": {
             "10 Big Poes": "
                 is_adult and 
-                ((Big_Poe and (big_poe_count <= 3 or guarantee_hint)) or 
-                    (Bottle_with_Big_Poe, big_poe_count))",
+                (Big_Poe or (Bottle_with_Big_Poe, big_poe_count))",
             "GS Castle Market Guard House": "is_child"
         },
         "exits": {
@@ -863,7 +860,7 @@
         "region_name": "Castle Town Mask Shop",
         "scene": "Castle Town Mask Shop",
         "events": {
-            "Skull Mask": "at('Kakariko Village', is_child and Zeldas_Letter)",
+            "Skull Mask": "Zeldas_Letter and (open_kakariko or at('Kakariko Village', is_child))",
             "Mask of Truth": "'Skull Mask' and
                 at('Lost Woods', is_child and can_play(Sarias_Song)) and
                 at('Graveyard', is_child and at_day) and
@@ -887,9 +884,9 @@
         "region_name": "Castle Town Bombchu Bowling",
         "scene": "Castle Town Bombchu Bowling",
         "locations": {
-            "Bombchu Bowling Bomb Bag": "has_bombchus_item",
-            "Bombchu Bowling Piece of Heart": "has_bombchus_item",
-            "Bombchu Bowling Bombchus": "has_bombchus_item"
+            "Bombchu Bowling Bomb Bag": "found_bombchus",
+            "Bombchu Bowling Piece of Heart": "found_bombchus",
+            "Bombchu Bowling Bombchus": "found_bombchus"
         },
         "exits": {
             "Castle Town": "True"
@@ -962,7 +959,7 @@
         "hint": "Kakariko Village",
         "events": {
             "Cojiro Access": "is_adult and 'Wake Up Adult Talon'",
-            "Kakariko Village Gate Open": "is_child and Zeldas_Letter"
+            "Kakariko Village Gate Open": "is_child and (Zeldas_Letter or open_kakariko)"
         },
         "locations": {
             "Sheik in Kakariko": "
@@ -974,9 +971,9 @@
             "GS Kakariko Guard's House": "is_child and at_night",
             "GS Kakariko Tree": "is_child and at_night",
             "GS Kakariko Watchtower": "
-                is_child and (has_slingshot or has_bombchus or 
-                    (logic_kakariko_tower_gs and (has_sticks or Kokiri_Sword) and
-                    (damage_multiplier != 'ohko' or has_fairy or can_use(Nayrus_Love)))) and at_night",
+                is_child and (Slingshot or has_bombchus or 
+                    (logic_kakariko_tower_gs and (Sticks or Kokiri_Sword) and
+                    (damage_multiplier != 'ohko' or Fairy or can_use(Nayrus_Love)))) and at_night",
             "GS Kakariko Above Impa's House": "can_use(Hookshot) and at_night",
             "Bug Rock": "has_bottle"
         },
@@ -991,16 +988,16 @@
             "Bottom of the Well": "
                 'Drain Well' and (is_child or shuffle_dungeon_entrances)",
             "Kakariko Potion Shop Front": "is_child or at_day",
-            "Kakariko Bombable Grotto": "can_blast_or_smash",
+            "Kakariko Bombable Grotto": "can_open_bomb_grotto",
             "Kakariko Impa Ledge": "
                 (is_child and at_day) or (is_adult and logic_visible_collisions) or can_use(Hookshot)",
             "Odd Medicine Rooftop": "
                 can_use(Hookshot) or 
                 (logic_man_on_roof and 
-                    (is_adult or at_day or has_slingshot or has_bombchus or 
-                        (logic_kakariko_tower_gs and (has_sticks or Kokiri_Sword) and
-                            (damage_multiplier != 'ohko' or has_fairy or can_use(Nayrus_Love)))))",
-            "Kakariko Village Backyard": "is_adult or at_day",
+                    (is_adult or at_day or Slingshot or has_bombchus or 
+                        (logic_kakariko_tower_gs and (Sticks or Kokiri_Sword) and
+                            (damage_multiplier != 'ohko' or Fairy or can_use(Nayrus_Love)))))",
+            "Kakariko Village Backyard": "is_adult and at_day",
             "Graveyard": "True",
             "Kakariko Village Behind Gate": "is_adult or open_kakariko or 'Kakariko Village Gate Open'"
         }
@@ -1051,16 +1048,11 @@
         "region_name": "House of Skulltula",
         "scene": "House of Skulltula",
         "locations": {
-            "10 Gold Skulltula Reward": "
-                (Gold_Skulltula_Token, 10)",
-            "20 Gold Skulltula Reward": "
-                (Gold_Skulltula_Token, 20)",
-            "30 Gold Skulltula Reward": "
-                (Gold_Skulltula_Token, 30) and guarantee_hint",
-            "40 Gold Skulltula Reward": "
-                (Gold_Skulltula_Token, 40) and guarantee_hint",
-            "50 Gold Skulltula Reward": "
-                (Gold_Skulltula_Token, 50) and guarantee_hint"
+            "10 Gold Skulltula Reward": "(Gold_Skulltula_Token, 10)",
+            "20 Gold Skulltula Reward": "(Gold_Skulltula_Token, 20)",
+            "30 Gold Skulltula Reward": "(Gold_Skulltula_Token, 30)",
+            "40 Gold Skulltula Reward": "(Gold_Skulltula_Token, 40)",
+            "50 Gold Skulltula Reward": "(Gold_Skulltula_Token, 50)"
         },
         "exits": {
             "Kakariko Village": "True"
@@ -1105,7 +1097,7 @@
             "Windmill Freestanding PoH": "
                 can_use(Boomerang) or
                 (logic_windmill_poh and is_adult) or 'Dampes Windmill Access'",
-            "Song at Windmill": "is_adult and has_ocarina"
+            "Song at Windmill": "is_adult and Ocarina"
         },
         "exits": {
             "Kakariko Village": "True"
@@ -1228,7 +1220,7 @@
             "Composer Grave Chest": "has_fire_source",
             "Song from Composer Grave": "
                 is_adult or 
-                (has_slingshot or Boomerang or has_sticks or 
+                (Slingshot or Boomerang or Sticks or 
                     has_explosives or Kokiri_Sword)"
         },
         "exits": {
@@ -1293,7 +1285,7 @@
                 can_blast_or_smash or 
                 (logic_dmt_bombable and is_child and Progressive_Strength_Upgrade)",
             "DM Trail Freestanding PoH": "
-                (damage_multiplier != 'ohko') or can_use(Nayrus_Love) or has_fairy or can_use(Hover_Boots) or
+                (damage_multiplier != 'ohko') or can_use(Nayrus_Love) or Fairy or can_use(Hover_Boots) or
                 (is_adult and here(can_plant_bean and (has_explosives or Progressive_Strength_Upgrade)))",
             "GS Mountain Trail Bean Patch": "
                 can_plant_bugs and
@@ -1314,7 +1306,7 @@
             "Death Mountain Summit": "
                 here(can_blast_or_smash) or (is_adult and here(can_plant_bean and Progressive_Strength_Upgrade))",
             "Dodongos Cavern Beginning": "has_explosives or Progressive_Strength_Upgrade or is_adult",
-            "Mountain Storms Grotto": "can_play(Song_of_Storms)"
+            "Mountain Storms Grotto": "can_open_storm_grotto"
         }
     },
     {
@@ -1327,7 +1319,7 @@
         },
         "locations": {
             "Biggoron": "
-                is_adult and guarantee_hint and 
+                is_adult and 
                 (Claim_Check or 
                     (guarantee_trade_path and 
                     ('Eyedrops Access' or (Eyedrops and disable_trade_revert))))",
@@ -1363,7 +1355,7 @@
                 Progressive_Strength_Upgrade or 'Goron City Child Fire'",
             "Stop Link the Goron": "
                 is_adult and 
-                (Progressive_Strength_Upgrade or has_explosives or has_bow or
+                (Progressive_Strength_Upgrade or has_explosives or Bow or
                     (logic_link_goron_dins and can_use(Dins_Fire)))"
         },
         "locations": {
@@ -1376,11 +1368,14 @@
                 can_blast_or_smash or can_use(Silver_Gauntlets)",
             "Goron City Pot Freestanding PoH": "
                 is_child and 'Goron City Child Fire' and
-                (has_bombs or Progressive_Strength_Upgrade or (has_bombchus and logic_goron_city_pot))",
+                (Bombs or (Progressive_Strength_Upgrade and logic_goron_city_pot_with_strength) or (has_bombchus and logic_goron_city_pot))",
             "Rolling Goron as Child": "
                 is_child and 
                 (has_explosives or (Progressive_Strength_Upgrade and logic_child_rolling_with_strength))",
             "Link the Goron": "'Stop Link the Goron'",
+            "Medigoron": "
+                is_adult and Progressive_Wallet and 
+                (can_blast_or_smash or Progressive_Strength_Upgrade)",
             "GS Goron City Boulder Maze": "is_child and has_explosives",
             "GS Goron City Center Platform": "is_adult",
             "Goron City Maze Gossip Stone": "
@@ -1494,7 +1489,7 @@
             "Death Mountain Crater Central Nearby": "
                 can_use(Goron_Tunic) and can_use(Longshot) and 
                 ((damage_multiplier != 'ohko' and damage_multiplier != 'quadruple') or 
-                    (has_fairy and not shuffle_dungeon_entrances) or can_use(Nayrus_Love))"
+                    (Fairy and not shuffle_dungeon_entrances) or can_use(Nayrus_Love))"
         }
     },
     {
@@ -1621,7 +1616,7 @@
             "Frog Ocarina Game": "
                 is_child and can_play(Zeldas_Lullaby) and can_play(Sarias_Song) and 
                 can_play(Suns_Song) and can_play(Eponas_Song) and 
-                can_play(Song_of_Time) and can_play(Song_of_Storms) and guarantee_hint",
+                can_play(Song_of_Time) and can_play(Song_of_Storms)",
             "Frogs in the Rain": "is_child and can_play(Song_of_Storms)",
             "Zora River Lower Freestanding PoH": "
                 is_child or can_use(Hover_Boots) or (is_adult and logic_zora_river_lower)",
@@ -1642,7 +1637,7 @@
             "Zora River Plateau Open Grotto": "True",
             "Zora River Plateau Bombable Grotto": "here(can_blast_or_smash)",
             "Lost Woods": "can_dive or can_use(Iron_Boots)",
-            "Zora River Storms Grotto": "can_play(Song_of_Storms)",
+            "Zora River Storms Grotto": "can_open_storm_grotto",
             "Zora River Behind Waterfall": "
                 can_play(Zeldas_Lullaby) or
                 (can_use(Hover_Boots) and logic_zora_with_hovers) or
@@ -1671,7 +1666,7 @@
         "scene": "Zoras Domain",
         "hint": "Zora's Domain",
         "events": {
-            "Zora Thawed": "is_adult and has_blue_fire",
+            "Zora Thawed": "is_adult and Blue_Fire",
             "Eyeball Frog Access": "
                 is_adult and 'Zora Thawed' and 
                 (Eyedrops or Eyeball_Frog or Prescription or 'Prescription Access')"
@@ -1679,10 +1674,11 @@
         "locations": {
             "Diving Minigame": "is_child",
             "Zoras Domain Torch Run": "can_use(Sticks)",
-            "Deliver Ruto's Letter": "is_child and Bottle_with_Letter and not open_fountain",
+            "Deliver Ruto's Letter": "
+                is_child and Bottle_with_Letter and zora_fountain != 'open'",
             "King Zora Thawed": "'Zora Thawed'",
             "GS Zora's Domain Frozen Waterfall": "
-                is_adult and at_night and (Progressive_Hookshot or has_bow or Magic_Meter)",
+                is_adult and at_night and (Progressive_Hookshot or Bow or Magic_Meter)",
             "Zoras Domain Gossip Stone": "True",
             "Gossip Stone Fairy": "can_summon_gossip_fairy_without_suns and has_bottle",
             "Fish Group": "is_child and has_bottle",
@@ -1692,9 +1688,11 @@
         "exits": {
             "Zora River Behind Waterfall": "True",
             "Lake Hylia": "is_child and can_dive",
-            "Zoras Domain Behind King Zora": "open_fountain or Deliver_Letter",
-            "Zora Shop": "is_child or has_blue_fire",
-            "Zoras Domain Storms Grotto": "can_play(Song_of_Storms)"
+            "Zoras Domain Behind King Zora": "
+                Deliver_Letter or zora_fountain == 'open' or
+                (zora_fountain == 'adult' and is_adult)",
+            "Zora Shop": "is_child or Blue_Fire",
+            "Zoras Domain Storms Grotto": "can_open_storm_grotto"
         }
     },
     {
@@ -1702,7 +1700,9 @@
         "scene": "Zoras Domain",
         "hint": "Zora's Domain",
         "exits": {
-            "Zoras Domain": "open_fountain or Deliver_Letter",
+            "Zoras Domain": "
+                Deliver_Letter or zora_fountain == 'open' or
+                (zora_fountain == 'adult' and is_adult)",
             "Zoras Fountain": "True"
         }
     },
@@ -1734,7 +1734,7 @@
         },
         "exits": {
             "Zoras Domain Behind King Zora": "True",
-            "Jabu Jabus Belly Beginning": "is_child and has_fish",
+            "Jabu Jabus Belly Beginning": "is_child and Fish",
             "Zoras Fountain Ice Ledge": "is_adult",
             "Zoras Fountain Fairy": "has_explosives"
         }
@@ -1784,7 +1784,7 @@
             "Links Cow": "can_play(Eponas_Song) and is_adult and at_day"
         },
         "locations": {
-            "Song from Malon": "is_child and Zeldas_Letter and has_ocarina and at_day",
+            "Song from Malon": "is_child and Zeldas_Letter and Ocarina and at_day",
             "GS Lon Lon Ranch Tree": "is_child",
             "GS Lon Lon Ranch Rain Shed": "is_child and at_night",
             "GS Lon Lon Ranch House Window": "can_use(Boomerang) and at_night",
@@ -1836,6 +1836,7 @@
         "dungeon": "Ganons Castle",
         "locations": {
             "Ganons Tower Boss Key Chest": "True",
+            "Ganondorf Hint": "Boss_Key_Ganons_Castle",
             "Ganon": "Boss_Key_Ganons_Castle and can_use(Light_Arrows)"
         }
     },
@@ -1893,8 +1894,8 @@
         "region_name": "Deku Theater",
         "scene": "Deku Theater",
         "locations": {
-            "Deku Theater Skull Mask": "is_child and 'Skull Mask' and (hint_dist != 'tournament' or guarantee_hint)",
-            "Deku Theater Mask of Truth": "is_child and 'Mask of Truth' and guarantee_hint"
+            "Deku Theater Skull Mask": "is_child and 'Skull Mask'",
+            "Deku Theater Mask of Truth": "is_child and 'Mask of Truth'"
         },
         "exits": {
             "Lost Woods Beyond Mido": "True"
@@ -1937,7 +1938,7 @@
         "scene": "Front of Meadow Grotto",
         "locations": {
             "Wolfos Grotto Chest": "
-                is_adult or has_slingshot or has_sticks or 
+                is_adult or Slingshot or Sticks or 
                 Kokiri_Sword or can_use(Dins_Fire)"
         },
         "exits": {
@@ -2078,7 +2079,7 @@
         "locations": {
             "Redead Grotto Chest": "
                 is_adult or 
-                (has_sticks or Kokiri_Sword or can_use(Dins_Fire))"
+                (Sticks or Kokiri_Sword or can_use(Dins_Fire))"
         },
         "exits": {
             "Kakariko Village": "True"

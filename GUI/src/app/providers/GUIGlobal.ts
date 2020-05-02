@@ -480,18 +480,6 @@ export class GUIGlobal {
     this.generator_settingsMap["settings_string"] = userSettings && "settings_string" in userSettings ? userSettings["settings_string"] : "";
     this.generator_settingsVisibilityMap["settings_string"] = true;
 
-    this.generator_settingsMap["patch_file"] = userSettings && "patch_file" in userSettings ? userSettings["patch_file"] : "";
-    this.generator_settingsVisibilityMap["patch_file"] = true;
-
-    this.generator_settingsMap["repatch_cosmetics"] = userSettings && "repatch_cosmetics" in userSettings ? userSettings["repatch_cosmetics"] : true;
-    this.generator_settingsVisibilityMap["repatch_cosmetics"] = true;
-
-    //Add Web only options
-    if (!this.getGlobalVar('electronAvailable')) {
-      this.generator_settingsMap["web_persist_in_cache"] = userSettings && "web_persist_in_cache" in userSettings ? userSettings["web_persist_in_cache"] : true;
-      this.generator_settingsVisibilityMap["web_persist_in_cache"] = true;
-    }
-
     console.log("JSON Settings Data:", guiSettings);
     console.log("Last User Settings:", userSettings);
     console.log("Final Settings Map", this.generator_settingsMap);
@@ -532,8 +520,8 @@ export class GUIGlobal {
         console.log("Remote:", remoteVersion);
         result.latestVersion = remoteVersion;
 
-        let currentSplit = res.replace('v', '').replace(' ', '.').split('.');
-        let remoteSplit = remoteVersion.replace('v', '').replace(' ', '.').split('.');
+        let currentSplit = res.replace('R-', '').replace('v', '').replace(' ', '.').split('.');
+        let remoteSplit = remoteVersion.replace('R-', '').replace('v', '').replace(' ', '.').split('.');
 
         //Compare versions
         if (Number(remoteSplit[0]) > Number(currentSplit[0])) {
@@ -546,6 +534,11 @@ export class GUIGlobal {
           else if (Number(remoteSplit[1]) == Number(currentSplit[1])) {
             if (Number(remoteSplit[2]) > Number(currentSplit[2])) {
               result.hasUpdate = true;
+            }
+            else if (Number(remoteSplit[2]) == Number(currentSplit[2])) {
+              if (Number(remoteSplit[3]) > Number(currentSplit[3])) {
+                result.hasUpdate = true;
+              }
             }
           }
         }
@@ -717,6 +710,21 @@ export class GUIGlobal {
     });
   }
 
+  deleteSettingsFromMapWithCondition(settingsMap: any, keyName: string, keyValue: any) {
+
+    this.getGlobalVar("generatorSettingsArray").forEach(tab => {
+
+      tab.sections.forEach(section => {
+        section.settings.forEach(setting => {
+
+          if (keyName in setting && setting[keyName] == keyValue) {
+            delete settingsMap[setting.name];
+          }
+        });
+      });
+    });
+  }
+
   createSettingsFileObject(includeFromPatchFileSettings: boolean = true, includeSeedSettingsOnly: boolean = false, sanitizeForBrowserCache: boolean = false, cancelWhenError: boolean = false) {
 
     let settingsFile: any = {};
@@ -771,6 +779,8 @@ export class GUIGlobal {
     //Delete keys the python source doesn't need
     delete settingsFile["presets"];
     delete settingsFile["open_output_dir"];
+    delete settingsFile["open_python_dir"];
+    delete settingsFile["generate_from_file"];
 
     //Delete fromPatchFile keys if mode is fromSeed
     if (!includeFromPatchFileSettings) {
@@ -785,50 +795,20 @@ export class GUIGlobal {
 
     //Delete keys not included in the seed
     if (includeSeedSettingsOnly) {
-      delete settingsFile["patch_file"];
-      delete settingsFile["repatch_cosmetics"];
-      delete settingsFile["cosmetics_only"];
-      delete settingsFile["distribution_file"];
-      delete settingsFile["checked_version"];
-      delete settingsFile["rom"];
-      delete settingsFile["output_dir"];
-      delete settingsFile["output_file"];
-      delete settingsFile["count"];
-      delete settingsFile["player_num"];
-      delete settingsFile["create_cosmetics_log"];
-      delete settingsFile["compress_rom"];
+
+      //Not mapped settings need to be deleted manually
       delete settingsFile["settings_string"];
 
-      //Delete Cosmetics keys
-      this.getGlobalVar("generatorCosmeticsArray").forEach(tab => {
-        tab.sections.forEach(section => {
-          section.settings.forEach(setting => {
-            delete settingsFile[setting.name];
-          });
-        });      
-      });
-
-      //Web only keys
-      if (!this.getGlobalVar('electronAvailable')) {
-        delete settingsFile["web_wad_file"];
-        delete settingsFile["web_common_key_file"];
-        delete settingsFile["web_common_key_string"];
-        delete settingsFile["web_wad_channel_id"];
-        delete settingsFile["web_wad_channel_title"];
-        delete settingsFile["web_output_type"];
-        delete settingsFile["web_persist_in_cache"];
-      }
+      //Delete all shared = false keys from map since they aren't included in the seed
+      this.deleteSettingsFromMapWithCondition(settingsFile, "shared", false);
     }
 
     //Delete keys the browser can't save (web only)
     if (sanitizeForBrowserCache) {
 
-      //File objects can not be saved due browser sandbox
-      delete settingsFile["rom"];
-      delete settingsFile["patch_file"];
-      delete settingsFile["distribution_file"];
-      delete settingsFile["web_wad_file"];
-      delete settingsFile["web_common_key_file"];
+      //Delete all settings of type Fileinput/Directoryinput. File objects can not be saved due browser sandbox
+      this.deleteSettingsFromMapWithCondition(settingsFile, "type", "Fileinput");
+      this.deleteSettingsFromMapWithCondition(settingsFile, "type", "Directoryinput");
     }
 
     return settingsFile;
@@ -844,7 +824,9 @@ export class GUIGlobal {
       });
     }
     else { //Web
-      localStorage.setItem(this.getGlobalVar("appType") == "generator" ? "generatorSettings_" + this.getGlobalVar("webSourceVersion") : "patcherSettings_" + this.getGlobalVar("webSourceVersion"), JSON.stringify(this.createSettingsFileObject(true, false, true)));
+      try {
+        localStorage.setItem(this.getGlobalVar("appType") == "generator" ? "generatorSettings_" + this.getGlobalVar("webSourceVersion") : "patcherSettings_" + this.getGlobalVar("webSourceVersion"), JSON.stringify(this.createSettingsFileObject(true, false, true)));
+      } catch { }
     }
   }
 
@@ -881,7 +863,7 @@ export class GUIGlobal {
         });
       }
       else { //Web
-        let url = (<any>window).location.protocol + "//" + (<any>window).location.host + "/settings/parse?version=" + (self.getGlobalVar("webIsMasterVersion") ? "" : "dev_") + self.getGlobalVar("webSourceVersion").replace(/ /g, "_");
+        let url = (<any>window).location.protocol + "//" + (<any>window).location.host + "/settings/parse?version=" + self.getGlobalVar("webSourceVersion");
         console.log("Request string from:", url);
 
         self.http.post(url, JSON.stringify(self.createSettingsFileObject(false, true, true)), { responseType: "text", headers: { "Content-Type": "application/json" } }).toPromise().then(res => {
@@ -927,7 +909,7 @@ export class GUIGlobal {
         });
       }
       else { //Web
-        let url = (<any>window).location.protocol + "//" + (<any>window).location.host + "/settings/get?version=" + (self.getGlobalVar("webIsMasterVersion") ? "" : "dev_") + self.getGlobalVar("webSourceVersion").replace(/ /g, "_") + "&settingsString=" + settingsString;
+        let url = (<any>window).location.protocol + "//" + (<any>window).location.host + "/settings/get?version=" + self.getGlobalVar("webSourceVersion") + "&settingsString=" + settingsString;
         console.log("Request settings from:", url);
 
         self.http.get(url, { responseType: "json" }).toPromise().then(res => {
@@ -967,8 +949,11 @@ export class GUIGlobal {
       });
     }
     else { //Web
-      if (this.getGlobalVar("appType") == "generator") //Generator only
-        localStorage.setItem("generatorPresets_" + this.getGlobalVar("webSourceVersion"), JSON.stringify(this.createPresetFileObject(), null, 4));
+      if (this.getGlobalVar("appType") == "generator") { //Generator only
+        try {
+          localStorage.setItem("generatorPresets_" + this.getGlobalVar("webSourceVersion"), JSON.stringify(this.createPresetFileObject(), null, 4));
+        } catch { }
+      }
     }
   }
 
@@ -1088,60 +1073,60 @@ export class GUIGlobal {
   async generateSeedWeb(raceSeed: boolean = false, useStaticSeed: string = "") { //Web only
 
     //Plando Logic
-    let plandoFile = this.generator_settingsMap["distribution_file"];
+    let plandoFile = null;
+    if (this.generator_settingsMap["enable_distribution_file"]) {
 
-    if (plandoFile && typeof (plandoFile) == "object" && plandoFile.name && plandoFile.name.length > 0) {
+      plandoFile = this.generator_settingsMap["distribution_file"];
 
-      if (plandoFile.name.toLowerCase().endsWith(".z64") || plandoFile.name.toLowerCase().endsWith(".n64") || plandoFile.name.toLowerCase().endsWith(".v64")) { //Not a ROM check...
-        throw { errorRomInPlando: "Your Ocarina of Time ROM doesn't belong in the plandomizer setting. If you don't know what plandomizer is, or don't plan to use it, leave that setting blank and try again." };
-      }
-      else if (!plandoFile.name.toLowerCase().endsWith(".json")) { //JSON extension test
-        throw { error: "Invalid plandomizer file extension! Plandomizer files must use the JSON file format. Note: Leave this setting blank if you don't actually want to use the plandomizer feature." };
-      }
+      if (plandoFile && typeof (plandoFile) == "object" && plandoFile.name && plandoFile.name.length > 0) {
 
-      if (raceSeed) { //No support for race seeds
-        throw { error: "Plandomizer is currently not supported for race seeds due security concerns. Please use a normal seed instead!" };
-      }
-
-      //Try to resolve the distribution file by reading it into memory
-      console.log("Read Plando JSON file: " + plandoFile.name);
-
-      let plandoFileJSON;
-
-      try {
-        plandoFileJSON = await this.readFileIntoMemoryWeb(plandoFile, false);
-      }
-      catch (ex) {
-        throw { error: "An error occurred during the loading of the plandomizer file! Please try to enter it again." };
-      }
-
-      if (!plandoFileJSON || plandoFileJSON.length < 1) {
-        throw { error: "The plandomizer file specified is not valid!" };
-      }
-
-      if (plandoFileJSON.length > 500000) { //Impose size limit to avoid server overload
-        throw { error: "The plandomizer file specified is too big! The maximum file size allowed is 500 KB." };
-      }
-
-      //Test JSON parse it
-      try {
-        let plandoFileParsed = JSON.parse(plandoFileJSON);
-
-        if (!plandoFileParsed || Object.keys(plandoFileParsed).length < 1) {
-          throw { error: "The plandomizer file specified is not valid JSON! Please verify the syntax." };
+        if (plandoFile.name.toLowerCase().endsWith(".z64") || plandoFile.name.toLowerCase().endsWith(".n64") || plandoFile.name.toLowerCase().endsWith(".v64")) { //Not a ROM check...
+          throw { error_rom_in_plando: "Your Ocarina of Time ROM doesn't belong in the plandomizer setting. This entirely optional setting is used to plan out seeds before generation by manipulating spoiler log files. If you want to generate a normal seed instead, please click YES!" };
         }
-      }
-      catch (err) {
-        console.error(err);
-        throw { error: "The plandomizer file specified is not valid JSON! Please verify the syntax. Detail: " + err.message };
-      }
 
-      plandoFile = plandoFileJSON;
-    }
-    else {
-      plandoFile = null;
-    }
+        if (raceSeed) { //No support for race seeds
+          throw { error: "Plandomizer is currently not supported for race seeds due security concerns. Please use a normal seed instead!" };
+        }
 
+        //Try to resolve the distribution file by reading it into memory
+        console.log("Read Plando JSON file: " + plandoFile.name);
+
+        let plandoFileJSON;
+
+        try {
+          plandoFileJSON = await this.readFileIntoMemoryWeb(plandoFile, false);
+        }
+        catch (ex) {
+          throw { error: "An error occurred during the loading of the plandomizer file! Please try to enter it again." };
+        }
+
+        if (!plandoFileJSON || plandoFileJSON.length < 1) {
+          throw { error: "The plandomizer file specified is not valid!" };
+        }
+
+        if (plandoFileJSON.length > 500000) { //Impose size limit to avoid server overload
+          throw { error: "The plandomizer file specified is too big! The maximum file size allowed is 500 KB." };
+        }
+
+        //Test JSON parse it
+        try {
+          let plandoFileParsed = JSON.parse(plandoFileJSON);
+
+          if (!plandoFileParsed || Object.keys(plandoFileParsed).length < 1) {
+            throw { error: "The plandomizer file specified is not valid JSON! Please verify the syntax." };
+          }
+        }
+        catch (err) {
+          console.error(err);
+          throw { error: "The plandomizer file specified is not valid JSON! Please verify the syntax. Detail: " + err.message };
+        }
+
+        plandoFile = plandoFileJSON;
+      }
+      else {
+        plandoFile = null;
+      }
+    }
 
     let settingsFile = this.createSettingsFileObject(false, false, true, true);
 
@@ -1149,9 +1134,13 @@ export class GUIGlobal {
       throw { error: "The generation was aborted due to previous errors!" };
     }
 
-    //Add distribution file back into map as string if available
+    //Add distribution file back into map as string if available, else clear it
     if (plandoFile) {
       settingsFile["distribution_file"] = plandoFile;
+    }
+    else {
+      settingsFile["enable_distribution_file"] = false;
+      settingsFile["distribution_file"] = "";
     }
 
     if (raceSeed) {
@@ -1175,7 +1164,7 @@ export class GUIGlobal {
     console.log("Race Seed:", raceSeed);
 
     //Request Seed Generation
-    let url = (<any>window).location.protocol + "//" + (<any>window).location.host + "/seed/create?version=" + (this.getGlobalVar("webIsMasterVersion") ? "" : "dev_") + this.getGlobalVar("webSourceVersion").replace(/ /g, "_");
+    let url = (<any>window).location.protocol + "//" + (<any>window).location.host + "/seed/create?version=" + this.getGlobalVar("webSourceVersion");
     console.log("Request seed id from:", url);
 
     try {

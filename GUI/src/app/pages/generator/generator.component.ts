@@ -38,31 +38,6 @@ export class GeneratorComponent implements OnInit {
   settingsBusy: boolean = false;
   settingsBusySaveOnly: boolean = true;
 
-  //For KeyValue pipe
-  presetKeyOrder = (a, b) => { //SYSTEM PRESETS > BUILT-IN PRESETS > USER PRESETS
-
-    if ("isNewPreset" in a.value) {
-      return -1;
-    }
-    else if ("isNewPreset" in b.value) {
-      return 1;
-    }
-    else if ("isDefaultPreset" in a.value) {
-      return -1;
-    }
-    else if ("isDefaultPreset" in b.value) {
-      return 1;
-    }
-    else if ("isProtectedPreset" in a.value) {
-      return -1;
-    }
-    else if ("isProtectedPreset" in b.value) {
-      return 1;
-    }
-    else
-      return 1;
-  };
-
   //Local (non persistent) Variables
   seedString: string = "";
   generateSeedButtonEnabled: boolean = true;
@@ -103,9 +78,11 @@ export class GeneratorComponent implements OnInit {
     //Set active footer tab on boot
     if (this.global.getGlobalVar('appType') == 'generator') {
       this.activeFooterTab = "Generate From Seed";
+      this.global.generator_settingsMap["generate_from_file"] = false;
     }
     else {
       this.activeFooterTab = "Generate From File";
+      this.global.generator_settingsMap["generate_from_file"] = true;
     }
 
     this.recheckAllSettings();
@@ -117,19 +94,6 @@ export class GeneratorComponent implements OnInit {
     //Electron only: Ensure settings string is up-to-date on app launch
     if (this.global.getGlobalVar('electronAvailable'))
       this.getSettingsString();
-
-    //Remove pace and global spinner element if it exists (to prevent it from ever coming up again in the same session) 
-    let pace = (<any>document).querySelector(".pace");
-
-    if (pace) {
-      pace.parentNode.removeChild(pace);
-    }
-
-    let globalSpinner = (<any>document).querySelector("#nb-global-spinner");
-
-    if (globalSpinner) {
-      globalSpinner.parentNode.removeChild(globalSpinner);
-    }
   }
 
   runEventListeners() {
@@ -161,9 +125,28 @@ export class GeneratorComponent implements OnInit {
     }, 0);
   }
 
+  getTabList(footer: boolean) {
+    let filteredTabList = [];
+
+    this.global.getGlobalVar('generatorSettingsArray').forEach(tab => {
+
+      if (!footer) {
+        if (!("footer" in tab) || !tab.footer)
+          filteredTabList.push(tab);
+      }
+      else {
+        if ("footer" in tab && tab.footer)
+          filteredTabList.push(tab);
+      }
+    });
+
+    return filteredTabList;
+  }
+
   generateSeed(fromPatchFile: boolean = false, webRaceSeed: boolean = false) {
 
     this.generateSeedButtonEnabled = false;
+    this.seedString = this.seedString.trim().replace(/[^a-zA-Z0-9_-]/g, '');
 
     //console.log("fromPatchFile:", fromPatchFile);
     //console.log(this.global.generator_settingsMap);
@@ -188,7 +171,7 @@ export class GeneratorComponent implements OnInit {
         autoFocus: true, closeOnBackdropClick: false, closeOnEsc: false, hasBackdrop: true, hasScroll: false, context: { dashboardRef: this, totalGenerationCount: this.global.generator_settingsMap["count"] }
       });
 
-      this.global.generateSeedElectron(dialogRef && dialogRef.componentRef && dialogRef.componentRef.instance ? dialogRef.componentRef.instance : null, fromPatchFile, fromPatchFile == false && this.seedString.trim().length > 0 ? this.seedString.trim() : "").then(res => {
+      this.global.generateSeedElectron(dialogRef && dialogRef.componentRef && dialogRef.componentRef.instance ? dialogRef.componentRef.instance : null, fromPatchFile, fromPatchFile == false && this.seedString.length > 0 ? this.seedString : "").then(res => {
         console.log('[Electron] Gen Success');
 
         this.generateSeedButtonEnabled = true;
@@ -222,10 +205,34 @@ export class GeneratorComponent implements OnInit {
     }
     else { //Web
 
-      this.global.generateSeedWeb(webRaceSeed, this.seedString.trim().length > 0 ? this.seedString.trim() : "").then(seedID => {
+      this.global.generateSeedWeb(webRaceSeed, this.seedString.length > 0 ? this.seedString : "").then(seedID => {
 
-        //Save last seed id in browser cache
-        localStorage.setItem("lastSeed", seedID);
+        try {
+          //Save last seed id in browser cache
+          localStorage.setItem("lastSeed", seedID);
+
+          //Save up to 10 seed ids in a sliding array in browser cache
+          let seedHistory = localStorage.getItem("seedHistory");
+
+          if (seedHistory == null || seedHistory.length < 1) { //First entry
+            localStorage.setItem("seedHistory", JSON.stringify([seedID]));
+          }
+          else { //Update array (10 entries max)
+            let seedHistoryArray = JSON.parse(seedHistory);
+
+            if (seedHistoryArray && typeof (seedHistoryArray) == "object" && Array.isArray(seedHistoryArray)) {
+
+              if (seedHistoryArray.length > 9) {
+                seedHistoryArray.shift();
+              }
+
+              seedHistoryArray.push(seedID);
+              localStorage.setItem("seedHistory", JSON.stringify(seedHistoryArray));
+            }
+          }
+        } catch (e) {
+          //Browser doesn't allow localStorage access
+        }
 
         //Re-direct to seed (waiting) page
         let seedURL = (<any>window).location.protocol + "//" + (<any>window).location.host + "/seed/get?id=" + seedID;
@@ -244,13 +251,14 @@ export class GeneratorComponent implements OnInit {
             autoFocus: true, closeOnBackdropClick: true, closeOnEsc: true, hasBackdrop: true, hasScroll: false, context: { dialogHeader: "Error", dialogMessage: "You may only generate one seed per minute to prevent spam!" }
           });
         } 
-        else if (err.hasOwnProperty('errorRomInPlando')) {
-          let plandoDisclaimer = "Your OoT ROM doesn't belong in the plandomizer setting. This entirely optional setting is used to plan out seeds before generation by manipulating spoiler log files. If you want to generate a normal seed, click YES.";
+        else if (err.hasOwnProperty('error_rom_in_plando')) {
+
           this.dialogService.open(ConfirmationWindow, {
-            autoFocus: true, closeOnBackdropClick: true, closeOnEsc: true, hasBackdrop: true, hasScroll: false, context: { dialogHeader: "Your rom doesn't belong here!", dialogMessage: plandoDisclaimer }
+            autoFocus: true, closeOnBackdropClick: true, closeOnEsc: true, hasBackdrop: true, hasScroll: false, context: { dialogHeader: "Your ROM doesn't belong here!", dialogMessage: err.error_rom_in_plando }
           }).onClose.subscribe(confirmed => {
             if (confirmed) {
-              this.global.generator_settingsMap["distribution_file"] = null;
+              this.global.generator_settingsMap["enable_distribution_file"] = false;
+              this.global.generator_settingsMap["distribution_file"] = "";
               this.generateSeed(fromPatchFile, webRaceSeed);
             }
           });
@@ -360,6 +368,13 @@ export class GeneratorComponent implements OnInit {
         autoFocus: true, closeOnBackdropClick: true, closeOnEsc: true, hasBackdrop: true, hasScroll: false, context: { dialogHeader: "Error", dialogMessage: "The entered settings string seems to be invalid!" }
       });
     });
+  }
+
+  getPresetArray() {
+    if (typeof (this.global.generator_presets) == "object")
+      return Object.keys(this.global.generator_presets);
+    else
+      return [];
   }
 
   loadPreset() {
@@ -514,6 +529,19 @@ export class GeneratorComponent implements OnInit {
     });
   }
 
+  openPythonDir() { //Electron only
+
+    this.global.createAndOpenPath("").then(() => {
+      console.log("Python dir opened");
+    }).catch(err => {
+      console.error("Error:", err);
+
+      this.dialogService.open(DialogWindow, {
+        autoFocus: true, closeOnBackdropClick: true, closeOnEsc: true, hasBackdrop: true, hasScroll: false, context: { dialogHeader: "Error", dialogMessage: err }
+      });   
+    });
+  }
+
   browseForFile(setting: any) { //Electron only
     this.global.browseForFile(setting.file_types).then(res => {
       this.global.generator_settingsMap[setting.name] = res;
@@ -545,12 +573,9 @@ export class GeneratorComponent implements OnInit {
   }
 
   changeFooterTabSelection(event) {
-    this.checkFooterTabVisibility(event);
-  }
-
-  checkFooterTabVisibility(event = null) {
 
     let title = "";
+    let value = false;
 
     if (event) {
       title = event.tabTitle;
@@ -560,103 +585,19 @@ export class GeneratorComponent implements OnInit {
       title = this.activeFooterTab;
     }
 
-    if (this.global.getGlobalVar('electronAvailable')) { //Electron
-
-      if (title === "Generate From File") {
-
-        let visibilityUpdates = [];
-        visibilityUpdates.push({ target: { controls_visibility_tab: "main-tab,detailed-tab,other-tab" }, value: false });
-        visibilityUpdates.push({ target: { controls_visibility_section: "preset-section" }, value: false });
-        visibilityUpdates.push({ target: { controls_visibility_setting: "count,create_spoiler,world_count,distribution_file" }, value: false });
-
-        visibilityUpdates.push({ target: { controls_visibility_tab: "cosmetics-tab,sfx-tab" }, value: this.global.generator_settingsMap['repatch_cosmetics'] });
-        visibilityUpdates.push({ target: { controls_visibility_setting: "create_cosmetics_log" }, value: this.global.generator_settingsMap['repatch_cosmetics'] });
-
-        this.toggleVisibility(visibilityUpdates, false);
-      }
-      else if (title === "Generate From Seed") {
-
-        let visibilityUpdates = [];
-        visibilityUpdates.push({ target: { controls_visibility_tab: "main-tab,detailed-tab,other-tab" }, value: true });
-        visibilityUpdates.push({ target: { controls_visibility_section: "preset-section" }, value: true });
-        visibilityUpdates.push({ target: { controls_visibility_setting: "count,create_spoiler,world_count,distribution_file" }, value: true });
-
-        visibilityUpdates.push({ target: { controls_visibility_tab: "cosmetics-tab,sfx-tab" }, value: true });
-        visibilityUpdates.push({ target: { controls_visibility_setting: "create_cosmetics_log" }, value: true });
-
-        this.toggleVisibility(visibilityUpdates, false);
-      }
+    if (title === "Generate From File") {
+      value = true;
     }
-    else { //Web
 
-      if (this.global.getGlobalVar("appType") == "generator") {
+    this.global.generator_settingsMap['generate_from_file'] = value;
 
-        if (title === "Generate From File") {
-
-          let visibilityUpdates = [];
-          visibilityUpdates.push({ target: { controls_visibility_tab: "main-tab,detailed-tab,other-tab" }, value: false });
-          visibilityUpdates.push({ target: { controls_visibility_section: "preset-section" }, value: false });
-          visibilityUpdates.push({ target: { controls_visibility_setting: "create_spoiler,world_count,distribution_file" }, value: false });
-
-          visibilityUpdates.push({ target: { controls_visibility_setting: "rom,web_output_type,player_num" }, value: true });
-          visibilityUpdates.push({ target: { controls_visibility_setting: "web_wad_file,web_common_key_file,web_common_key_string,web_wad_channel_id,web_wad_channel_title" }, value: this.global.generator_settingsMap['web_output_type'] == "wad" });
-
-          visibilityUpdates.push({ target: { controls_visibility_tab: "cosmetics-tab,sfx-tab" }, value: this.global.generator_settingsMap['repatch_cosmetics'] });
-
-          this.toggleVisibility(visibilityUpdates, false);
-        }
-        else if (title === "Generate From Seed") {
-
-          let visibilityUpdates = [];
-          visibilityUpdates.push({ target: { controls_visibility_tab: "main-tab,detailed-tab,other-tab" }, value: true });
-          visibilityUpdates.push({ target: { controls_visibility_section: "preset-section" }, value: true });
-          visibilityUpdates.push({ target: { controls_visibility_setting: "create_spoiler,world_count,distribution_file" }, value: true });
-
-          visibilityUpdates.push({ target: { controls_visibility_setting: "rom,web_output_type,player_num" }, value: false });
-          visibilityUpdates.push({ target: { controls_visibility_setting: "web_wad_file,web_common_key_file,web_common_key_string,web_wad_channel_id,web_wad_channel_title" }, value: false });
-
-          visibilityUpdates.push({ target: { controls_visibility_tab: "cosmetics-tab,sfx-tab" }, value: true });
-
-          this.toggleVisibility(visibilityUpdates, false);
-        }
-      }
-      else if (this.global.getGlobalVar("appType") == "patcher") {
-
-        if (title === "Generate From File") {
-
-          let visibilityUpdates = [];
-          visibilityUpdates.push({ target: { controls_visibility_tab: "cosmetics-tab,sfx-tab" }, value: this.global.generator_settingsMap['repatch_cosmetics'] });
-
-          visibilityUpdates.push({ target: { controls_visibility_setting: "rom,web_output_type,player_num" }, value: true });
-          visibilityUpdates.push({ target: { controls_visibility_setting: "web_wad_file,web_common_key_file,web_common_key_string,web_wad_channel_id,web_wad_channel_title" }, value: this.global.generator_settingsMap['web_output_type'] == "wad" });
-
-          this.toggleVisibility(visibilityUpdates, false);
-        }
-      }
-      else if (this.global.getGlobalVar("appType") == "patcher_only") {
-
-        if (title === "Generate From File") {
-
-          let visibilityUpdates = [];
-          visibilityUpdates.push({ target: { controls_visibility_setting: "rom,web_output_type" }, value: true });
-          visibilityUpdates.push({ target: { controls_visibility_setting: "web_wad_file,web_common_key_file,web_common_key_string,web_wad_channel_id,web_wad_channel_title" }, value: this.global.generator_settingsMap['web_output_type'] == "wad" });
-
-          this.toggleVisibility(visibilityUpdates, false);
-        }
-      }
-    }
+    let setting = this.findSettingByName("generate_from_file");
+    this.checkVisibility(value, setting, this.findOption(setting.options, value));
   }
 
   updateCosmeticsCheckboxChange(value) {
-
-    let visibilityUpdates = [];
-    visibilityUpdates.push({ target: { controls_visibility_tab: "cosmetics-tab,sfx-tab" }, value: value });
-
-    if (this.global.getGlobalVar('electronAvailable')) //Create Cosmetics Log is Electron only
-      visibilityUpdates.push({ target: { controls_visibility_setting: "create_cosmetics_log" }, value: value });
-
-    this.toggleVisibility(visibilityUpdates, false);
-    this.afterSettingChange(true);
+    let setting = this.findSettingByName("repatch_cosmetics");
+    this.checkVisibility(value, setting, this.findOption(setting.options, value));
   }
 
   calculateRowHeight(listRef: MatGridList, tab: any) {
@@ -805,7 +746,27 @@ export class GeneratorComponent implements OnInit {
     return section.row_span[spanIndex];
   }
 
-  findOption(options: any, optionName: string) {
+  findSettingByName(settingName: string) {
+
+    for (let tabIndex = 0; tabIndex < this.global.getGlobalVar('generatorSettingsArray').length; tabIndex++) {
+      let tab = this.global.getGlobalVar('generatorSettingsArray')[tabIndex];
+
+      for (let sectionIndex = 0; sectionIndex < tab.sections.length; sectionIndex++) {
+        let section = tab.sections[sectionIndex];
+
+        for (let settingIndex = 0; settingIndex < section.settings.length; settingIndex++) {
+          let setting = section.settings[settingIndex];
+
+          if (setting.name == settingName)
+            return setting;     
+        }
+      }
+    }
+
+    return false;
+  }
+
+  findOption(options: any, optionName: any) {
     return options.find(option => { return option.name == optionName });
   }
 
@@ -835,8 +796,8 @@ export class GeneratorComponent implements OnInit {
     //Array of settings that should have its visibility altered
     var targetSettings = [];
 
-    if (setting["type"] === "Checkbutton" || setting["type"] === "Radiobutton" || setting["type"] === "Combobox") {
-      let value = typeof (newValue) == "object" ? newValue.value : newValue;
+    if (setting["type"] === "Checkbutton" || setting["type"] === "Radiobutton" || setting["type"] === "Combobox" || setting["type"] === "SearchBox") {
+      let value = (typeof (newValue) == "object") && ("value" in newValue) ? newValue.value : newValue;
 
       //Open color picker if custom color is selected
       if (refColorPicker && value == "Custom Color") {
@@ -847,16 +808,44 @@ export class GeneratorComponent implements OnInit {
         refColorPicker.click();
       }
 
-      //Build list of options
-      setting.options.forEach(optionToAdd => {
+      if (setting["type"] === "SearchBox") { //Special handling for type "SearchBox"
 
-        if (optionToAdd.name === option.name) //Add currently selected item last for priority
-          return;
+        let optionsSelected = value && typeof (value) == "object" && Array.isArray(value) && value.length > 0;
+     
+        //First build a complete list consisting of every option that hasn't been selected yet with a true value
+        setting.options.forEach(optionToAdd => {
 
-        targetSettings.push({ target: optionToAdd, value: optionToAdd.name != value });
-      });
+          //Ensure option isn't selected before adding it
+          if (optionsSelected) {
+            let alreadySelected = value.find(selectedItem => selectedItem.name == optionToAdd.name);
 
-      targetSettings.push({ target: option, value: false });
+            if (alreadySelected)
+              return;
+          }
+
+          targetSettings.push({ target: optionToAdd, value: true });
+        });
+
+        //Push every selected option last with a false value
+        if (optionsSelected) {
+          value.forEach(selectedItem => {
+            targetSettings.push({ target: selectedItem, value: false });
+          });
+        }
+      }
+      else { //Every other settings type
+
+        //Build list of options
+        setting.options.forEach(optionToAdd => {
+
+          if (optionToAdd.name === option.name) //Add currently selected item last for priority
+            return;
+
+          targetSettings.push({ target: optionToAdd, value: optionToAdd.name != value });
+        });
+
+        targetSettings.push({ target: option, value: false }); //Selected setting uses false as it can disable settings now
+      }
     }
 
     //Handle activations/deactivations
@@ -875,70 +864,8 @@ export class GeneratorComponent implements OnInit {
       if (disableOnly && targetValue == true)
         return;
 
-      if ("controls_visibility_tab" in targetSetting) {
-
-        //console.log(targetSetting, setting);
-
-        targetSetting["controls_visibility_tab"].split(",").forEach(tab => {
-          this.global.generator_tabsVisibilityMap[tab.replace(/-/g, "_")] = targetValue;
-
-          //Kick user out of active tab and go back to root if it gets disabled here
-          if (!targetValue && this.global.getGlobalVar("generatorSettingsObj")) {
-
-            if (this.activeTab == this.global.getGlobalVar("generatorSettingsObj")[tab.replace(/-/g, "_")].text) {
-              //console.log("Kick user out of tab");
-              this.tabSet.selectTab(this.tabSet.tabs.first);
-            }
-          }
-        });
-      }
-
-      if ("controls_visibility_section" in targetSetting) {
-
-        targetSetting["controls_visibility_section"].split(",").forEach(section => {
-
-          let targetSection = null;
-
-          //Find section
-          for (let i = 0; i < this.global.getGlobalVar('generatorSettingsArray').length; i++) {
-            let tab = this.global.getGlobalVar('generatorSettingsArray')[i];
-
-            for (let n = 0; n < tab.sections.length; n++) {
-
-              if (tab.sections[n].name === section.replace(/-/g, "_")) {
-                targetSection = tab.sections[n];
-                break;
-              }
-            }
-
-            if (targetSection)
-              break;
-          }
-
-          //Disable/Enable entire section
-          if (targetSection) {
-
-            targetSection.settings.forEach(setting => {
-
-              if (targetValue == true && this.global.generator_settingsVisibilityMap[setting.name] == false) //Only trigger change if a setting gets re-enabled
-                triggeredChange = true;
-
-              this.global.generator_settingsVisibilityMap[setting.name] = targetValue;
-            });
-          }
-        });
-      }
-
-      if ("controls_visibility_setting" in targetSetting) {
-
-        targetSetting["controls_visibility_setting"].split(",").forEach(setting => {
-
-          if (targetValue == true && this.global.generator_settingsVisibilityMap[setting] == false) //Only trigger change if a setting gets re-enabled
-            triggeredChange = true;
-
-          this.global.generator_settingsVisibilityMap[setting] = targetValue;
-        });
-      }
+      if (this.executeVisibilityForSetting(targetSetting, targetValue))
+        triggeredChange = true;
     });
 
     //Re-run function with every single setting to ensure integrity (nothing gets re-activated when it shouldn't)
@@ -947,31 +874,163 @@ export class GeneratorComponent implements OnInit {
     }
   }
 
+  executeVisibilityForSetting(targetSetting: any, targetValue: boolean) {
+
+    var triggeredChange = false;
+
+    if ("controls_visibility_tab" in targetSetting) {
+
+      //console.log(targetSetting, setting);
+
+      targetSetting["controls_visibility_tab"].split(",").forEach(tab => {
+
+        //Ignore tabs that don't exist in this specific app
+        if (!(tab in this.global.generator_tabsVisibilityMap))
+          return;
+
+        this.global.generator_tabsVisibilityMap[tab] = targetValue;
+
+        //Kick user out of active tab and go back to root if it gets disabled here
+        if (!targetValue && this.global.getGlobalVar("generatorSettingsObj")) {
+
+          if (this.activeTab == this.global.getGlobalVar("generatorSettingsObj")[tab].text) {
+            //console.log("Kick user out of tab");
+            this.tabSet.selectTab(this.tabSet.tabs.first);
+          }
+        }
+      });
+    }
+
+    if ("controls_visibility_section" in targetSetting) {
+
+      targetSetting["controls_visibility_section"].split(",").forEach(section => {
+
+        let targetSection = null;
+
+        //Find section
+        for (let i = 0; i < this.global.getGlobalVar('generatorSettingsArray').length; i++) {
+          let tab = this.global.getGlobalVar('generatorSettingsArray')[i];
+
+          for (let n = 0; n < tab.sections.length; n++) {
+
+            if (tab.sections[n].name === section) {
+              targetSection = tab.sections[n];
+              break;
+            }
+          }
+
+          if (targetSection)
+            break;
+        }
+
+        //Disable/Enable entire section
+        if (targetSection) {
+
+          targetSection.settings.forEach(setting => {
+
+            //Ignore settings that don't exist in this specific app
+            if (!(setting.name in this.global.generator_settingsVisibilityMap))
+              return;
+
+            let enabledChildren = false;
+
+            //If a setting gets disabled, re-enable all the settings that this setting caused to deactivate. The later full check will fix any potential issues
+            if (targetValue == false && this.global.generator_settingsVisibilityMap[setting.name] == true) {
+              enabledChildren = this.clearDeactivationsOfSetting(setting);
+            }
+
+            if ((targetValue == true && this.global.generator_settingsVisibilityMap[setting.name] == false) || (enabledChildren)) //Only trigger change if a (sub) setting gets re-enabled
+              triggeredChange = true;
+
+            this.global.generator_settingsVisibilityMap[setting.name] = targetValue;
+          });
+        }
+      });
+    }
+
+    if ("controls_visibility_setting" in targetSetting) {
+
+      targetSetting["controls_visibility_setting"].split(",").forEach(setting => {
+
+        //Ignore settings that don't exist in this specific app
+        if (!(setting in this.global.generator_settingsVisibilityMap))
+          return;
+
+        let enabledChildren = false;
+
+        if (targetValue == false && this.global.generator_settingsVisibilityMap[setting] == true) {
+          enabledChildren = this.clearDeactivationsOfSetting(this.findSettingByName(setting));
+        }
+
+        if ((targetValue == true && this.global.generator_settingsVisibilityMap[setting] == false) || (enabledChildren)) //Only trigger change if a (sub) setting gets re-enabled
+          triggeredChange = true;
+
+        this.global.generator_settingsVisibilityMap[setting] = targetValue;
+      });
+    }
+
+    return triggeredChange;
+  }
+
+  clearDeactivationsOfSetting(setting: any) {
+
+    let enabledChildren = false;
+
+    if (setting["type"] === "Checkbutton" || setting["type"] === "Radiobutton" || setting["type"] === "Combobox" || setting["type"] === "SearchBox") {
+
+      if (setting["type"] === "SearchBox") { //Special handling for type "SearchBox"
+
+        //Get every option currently added to the list
+        if (this.global.generator_settingsMap[setting.name] && this.global.generator_settingsMap[setting.name].length > 0) {
+          this.global.generator_settingsMap[setting.name].forEach(selectedItem => {
+            if (this.executeVisibilityForSetting(selectedItem, true))
+              enabledChildren = true;
+          });
+        }
+      }
+      else { //Every other settings type
+        //Get currently selected option
+        let currentOption = this.findOption(setting.options, this.global.generator_settingsMap[setting.name]);
+
+        if (currentOption) {
+          if (this.executeVisibilityForSetting(currentOption, true))
+            enabledChildren = true;
+        }
+      }
+    }
+
+    return enabledChildren;
+  }
+
   recheckAllSettings(skipSetting: string = "", disableOnly: boolean = true, noValueChange: boolean = false) {
 
     this.global.getGlobalVar('generatorSettingsArray').forEach(tab => tab.sections.forEach(section => section.settings.forEach(checkSetting => {
 
-      if (skipSetting && checkSetting.name === skipSetting)
+      if (skipSetting && checkSetting.name === skipSetting || !this.global.generator_settingsVisibilityMap[checkSetting.name]) //Disabled settings can not alter visibility anymore
         return;
 
-      if (checkSetting["type"] === "Checkbutton" || checkSetting["type"] === "Radiobutton" || checkSetting["type"] === "Combobox") {
+      if (checkSetting["type"] === "Checkbutton" || checkSetting["type"] === "Radiobutton" || checkSetting["type"] === "Combobox" || checkSetting["type"] === "SearchBox") {
 
-        let targetOption = checkSetting.options.find(option => {
+        if (checkSetting["type"] === "SearchBox") { //Special handling for type "SearchBox"
+          //Call checkVisibility right away which will perform a full list check
+          this.checkVisibility({ value: this.global.generator_settingsMap[checkSetting.name] }, checkSetting, null, null, disableOnly, noValueChange);
+        }
+        else { //Every other settings type
 
-          if (option.name === this.global.generator_settingsMap[checkSetting.name])
-            return true;
+          let targetOption = checkSetting.options.find(option => {
 
-          return false;
-        });
+            if (option.name === this.global.generator_settingsMap[checkSetting.name])
+              return true;
 
-        if (targetOption) {
-          this.checkVisibility({ value: this.global.generator_settingsMap[checkSetting.name] }, checkSetting, targetOption, null, disableOnly, noValueChange);
+            return false;
+          });
+
+          if (targetOption) {
+            this.checkVisibility({ value: this.global.generator_settingsMap[checkSetting.name] }, checkSetting, targetOption, null, disableOnly, noValueChange);
+          }
         }
       }
     })));
-
-    //Check bottom tabset last
-    this.checkFooterTabVisibility();  
   }
 
   revertToPriorValue(settingName: string, forceChangeDetection: boolean) {

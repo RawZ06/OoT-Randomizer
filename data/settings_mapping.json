@@ -19,7 +19,8 @@
             "create_spoiler",
             "create_cosmetics_log",
             "compress_rom",
-            "open_output_dir"
+            "open_output_dir",
+            "open_python_dir"
           ]
         },
         {
@@ -55,16 +56,16 @@
           "col_span": 4,
           "row_span": [1,1,1],
           "settings": [
+            "enable_distribution_file",
+            "distribution_file",
+            "create_spoiler",
+            "web_output_type",
             "rom",
             "web_wad_file",
             "web_common_key_file",
             "web_common_key_string",
             "web_wad_channel_id",
-            "web_wad_channel_title",
-            "enable_distribution_file",           
-            "distribution_file",
-            "create_spoiler",
-            "web_output_type"
+            "web_wad_channel_title"
           ]
         },
         {
@@ -100,13 +101,13 @@
           "col_span": 4,
           "row_span": [1,1,1],
           "settings": [
+            "web_output_type",
             "rom",
             "web_wad_file",
             "web_common_key_file",
             "web_common_key_string",
             "web_wad_channel_id",
-            "web_wad_channel_title",
-            "web_output_type"
+            "web_wad_channel_title"
           ]
         },
         {
@@ -143,12 +144,13 @@
             "open_forest",
             "open_kakariko",
             "open_door_of_time",
-            "open_fountain",
+            "zora_fountain",
             "gerudo_fortress",
             "bridge",
             "bridge_tokens",
             "triforce_hunt",
-            "bombchus_in_logic",            
+            "triforce_goal_per_world",
+            "bombchus_in_logic",
             "one_item_per_dungeon",
             "trials_random",
             "trials"
@@ -187,7 +189,8 @@
             "shuffle_ocarinas",
             "shuffle_weird_egg",
             "shuffle_gerudo_card",
-            "shuffle_beans"
+            "shuffle_beans",
+            "shuffle_medigoron_carpet_salesman"
           ]
         },
         {
@@ -239,6 +242,51 @@
       ]
     },
     {
+      "name": "starting_tab",
+      "text": "Starting Inventory",
+      "app_type": "generator",
+      "sections": [
+        {
+          "name": "starting_equipment_section",
+          "text": "Starting Equipment",
+          "col_span": 2,
+          "row_span": [2,2,2],
+          "settings": [
+            "starting_equipment"
+          ]
+        },
+        {
+          "name": "starting_items_section",
+          "text": "Starting Items",
+          "col_span": 2,
+          "row_span": [3,3,3],
+          "settings": [
+            "starting_items"
+          ]
+        },
+        {
+          "name": "starting_songs_section",
+          "text": "Starting Songs",
+          "col_span": 2,
+          "row_span": [2,2,2],
+          "settings": [
+            "starting_songs"
+          ]
+        },
+        {
+          "name": "starting_other_section",
+          "text": "Other",
+          "col_span": 2,
+          "row_span": [1,1,1],
+          "settings": [
+            "start_with_consumables",
+            "start_with_rupees",
+            "starting_hearts"
+          ]
+        }
+      ]
+    },
+    {
       "name": "other_tab",
       "text": "Other",
       "app_type": ["generator"],
@@ -251,14 +299,10 @@
             "no_escape_sequence",
             "no_guard_stealth",
             "no_epona_race",
-            "no_first_dampe_race",
+            "no_first_minigame_phases",
             "useful_cutscenes",
             "fast_chests",
             "free_scarecrow",
-            "start_with_fast_travel",
-            "start_with_rupees",
-            "start_with_wallet",
-            "start_with_deku_equipment",
             "chicken_count_random",
             "chicken_count",
             "big_poe_count_random",
@@ -287,6 +331,7 @@
           "settings": [
             "item_pool_value",
             "junk_ice_traps",
+            "ice_trap_appearance",
             "logic_earliest_adult_trade",
             "logic_latest_adult_trade"
           ]
@@ -306,6 +351,7 @@
           "settings": [
             "default_targeting",
             "display_dpad",
+            "correct_model_colors",
             "randomize_all_cosmetics"
           ]
         },
@@ -314,7 +360,7 @@
           "text": "Equipment",
           "is_colors": true,
           "col_span": 1,
-          "row_span": [6,6,6],
+          "row_span": [5,5,5],
           "settings": [
             "kokiri_color",
             "goron_color",
@@ -331,7 +377,7 @@
           "text": "UI Colors",
           "is_colors": true,
           "col_span": 1,
-          "row_span": [6,6,6],
+          "row_span": [5,5,5],
           "settings": [
             "heart_color",
             "magic_color",
@@ -346,7 +392,7 @@
           "text": "Navi Colors",
           "is_colors": true,
           "col_span": 2,
-          "row_span": [6,6,6],
+          "row_span": [5,5,5],
           "settings": [
             "navi_color_default_inner",
             "navi_color_default_outer",
@@ -409,6 +455,53 @@
           "settings": [
             "sfx_navi_overworld",
             "sfx_navi_enemy"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "footer_tab_electron",
+      "text": "",
+      "exclude_from_web": true,
+      "footer": true,
+      "sections": [
+        {
+          "name": "seed_section",
+          "text": "",
+          "settings": [
+            "generate_from_file"
+          ]
+        },
+        {
+          "name": "file_section",
+          "text": "",
+          "settings": [
+            "patch_file",
+            "repatch_cosmetics"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "footer_tab_web",
+      "text": "",
+      "exclude_from_electron": true,
+      "footer": true,
+      "sections": [
+        {
+          "name": "seed_section",
+          "text": "",
+          "settings": [
+            "generate_from_file"
+          ]
+        },
+        {
+          "name": "file_section",
+          "text": "",
+          "settings": [
+            "patch_file",
+            "repatch_cosmetics",
+            "web_persist_in_cache"
           ]
         }
       ]

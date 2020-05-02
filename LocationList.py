@@ -56,7 +56,7 @@ location_table = {
     "Song at Windmill":                                ("Song",        0xFF,  0x2B, (0x0E42C07, 0x0E42B8B),   ("Kakariko Village", "Kakariko", "Songs")),
 
     "Malon Egg":                                       ("NPC",         0x5F,  0x47, None,                     ("Hyrule Castle", "Castle Town",)),
-    "Zeldas Letter":                                   ("NPC",         None,  None, None,                     ("Hyrule Castle", "Castle Town",)),
+    "Zeldas Letter":                                   ("NPC",         0x4A,  0x0B, None,                     ("Hyrule Castle", "Castle Town",)),
     "Darunias Joy":                                    ("NPC",         0x62,  0x54, None,                     ("Goron City",)),
     "Diving Minigame":                                 ("NPC",         0x58,  0x37, None,                     ("Zora's Domain", "Minigames",)),
     "Child Fishing":                                   ("NPC",         0x49,  0x3E, None,                     ("Lake Hylia", "Minigames",)),
@@ -96,7 +96,8 @@ location_table = {
     "Lake Hylia Sun":                                  ("NPC",         0x57,  0x58, None,                     ("Lake Hylia",)),
     "Gerudo Fortress Membership Card":                 ("NPC",         0x0C,  0x3A, None,                     ("Gerudo's Fortress", "Gerudo",)),
     "Ocarina of Time":                                 ("NPC",         0x51,  0x0C, None,                     ("Hyrule Field", "Need Spiritual Stones",)),
-    "Haunted Wasteland Bombchu Salesman":              ("NPC",         None,  None, None,                     ("Haunted Wasteland",)),
+    "Haunted Wasteland Bombchu Salesman":              ("NPC",         0x5E,  0x03, None,                     ("Haunted Wasteland",)),
+    "Medigoron":                                       ("NPC",         0x62,  0x28, None,                     ("Goron City",)),
 
     "Impa House Freestanding PoH":                     ("Collectable", 0x37,  0x01, None,                     ("Kakariko Village", "Kakariko",)),
     "Tektite Grotto Freestanding PoH":                 ("Collectable", 0x3E,  0x01, None,                     ("Hyrule Field", "Grottos",)),
@@ -336,8 +337,8 @@ location_table = {
     # Shadow Temple MQ
     "Shadow Temple MQ Compass Chest":                  ("Chest",       0x07,  0x01, None,                     ("Shadow Temple",)),
     "Shadow Temple MQ Hover Boots Chest":              ("Chest",       0x07,  0x07, None,                     ("Shadow Temple",)),
-    "Shadow Temple MQ Early Gibdos Chest":             ("Chest",       0x07,  0x02, None,                     ("Shadow Temple",)),
-    "Shadow Temple MQ Map Chest":                      ("Chest",       0x07,  0x03, None,                     ("Shadow Temple",)),
+    "Shadow Temple MQ Early Gibdos Chest":             ("Chest",       0x07,  0x03, None,                     ("Shadow Temple",)),
+    "Shadow Temple MQ Map Chest":                      ("Chest",       0x07,  0x02, None,                     ("Shadow Temple",)),
     "Shadow Temple MQ Beamos Silver Rupees Chest":     ("Chest",       0x07,  0x0F, None,                     ("Shadow Temple",)),
     "Shadow Temple MQ Falling Spikes Switch Chest":    ("Chest",       0x07,  0x04, None,                     ("Shadow Temple",)),
     "Shadow Temple MQ Falling Spikes Lower Chest":     ("Chest",       0x07,  0x05, None,                     ("Shadow Temple",)),
@@ -797,6 +798,8 @@ location_table = {
     "Lost Woods Generic Grotto Gossip Stone":          ("GossipStone", None,  None, None,                     None),
     "Mountain Storms Grotto Gossip Stone":             ("GossipStone", None,  None, None,                     None),
     "Top of Crater Grotto Gossip Stone":               ("GossipStone", None,  None, None,                     None),
+
+    "Ganondorf Hint":                                  ("GossipStone", None,  None, None,                     None),
 }
 
 # Business Scrub Details
@@ -822,8 +825,10 @@ location_groups = {
     'Collectable': [name for (name, data) in location_table.items() if data[0] == 'Collectable'],
     'BossHeart': [name for (name, data) in location_table.items() if data[0] == 'BossHeart'],
     'CollectableLike': [name for (name, data) in location_table.items() if data[0] in ('Collectable', 'BossHeart', 'GS Token')],
+    'CanSee': [name for (name, data) in location_table.items() if data[0] in ('Collectable', 'BossHeart', 'GS Token', 'Shop')],
     'Dungeon': [name for (name, data) in location_table.items() if data[4] is not None and any(dungeon in data[4] for dungeon in dungeons)],
 }
+
 
 # Function to run exactly once after after placing items in drop locations for each world
 # Sets all Drop locations to a unique name in order to avoid name issues and to identify locations in the spoiler

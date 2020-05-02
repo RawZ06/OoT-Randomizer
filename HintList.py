@@ -40,15 +40,35 @@ def getHintGroup(group, world):
 
         hint = getHint(name, world.clearer_hints)
 
-        # 10 Big Poes does not require hint if 3 or less required.
-        if name == '10 Big Poes' and world.big_poe_count <= 3:
-            hint.type = ['overworld', 'sometimes']
-        if name == 'Deku Theater Skull Mask' and world.hint_dist == 'tournament':
+        if hint.name in world.always_hints:
             hint.type = 'always'
 
         if group in hint.type and not (name in hintExclusions(world)):
             ret.append(hint)
     return ret
+
+
+def getRequiredHints(world):
+    ret = []
+    for name in hintTable:
+        hint = getHint(name)
+        if 'always' in hint.type or hint.name in conditional_always and conditional_always[hint.name](world):
+            ret.append(hint)
+    return ret
+
+
+# Hints required under certain settings
+conditional_always = {
+    '10 Big Poes':               lambda world: world.big_poe_count > 3,
+    'Deku Theater Skull Mask':   lambda world: world.hint_dist == 'tournament',
+    'Song from Ocarina of Time': lambda world: world.bridge not in ('stones', 'dungeons') and world.shuffle_ganon_bosskey not in ('lacs_stones', 'lacs_dungeons'),
+    'Ocarina of Time':           lambda world: world.bridge not in ('stones', 'dungeons') and world.shuffle_ganon_bosskey not in ('lacs_stones', 'lacs_dungeons'),
+    'Sheik in Kakariko':         lambda world: world.bridge not in ('medallions', 'dungeons') and world.shuffle_ganon_bosskey not in ('lacs_medallions', 'lacs_dungeons'),
+    'Biggoron':                  lambda world: world.logic_earliest_adult_trade != 'claim_check' or world.logic_latest_adult_trade != 'claim_check',
+    '50 Gold Skulltula Reward':  lambda world: world.bridge != 'tokens' or world.bridge_tokens < 50,
+    '40 Gold Skulltula Reward':  lambda world: world.bridge != 'tokens' or world.bridge_tokens < 40,
+    '30 Gold Skulltula Reward':  lambda world: world.bridge != 'tokens' or world.bridge_tokens < 30,
+}
 
 
 # table of hints, format is (name, hint text, clear hint text, type of hint) there are special characters that are read for certain in game commands:
@@ -71,6 +91,7 @@ hintTable = {
     'Iron Boots':                                               (["sink shoes", "clank cleats"], "the Iron Boots", 'item'),
     'Hover Boots':                                              (["butter boots", "sacred slippers", "spacewalkers"], "the Hover Boots", 'item'),
     'Kokiri Sword':                                             (["a butter knife", "a starter slasher", "a switchblade"], "the Kokiri Sword", 'item'),
+    'Giants Knife':                                             (["a fragile blade", "a breakable cleaver"], "the Giant's Knife", 'item'),
     'Biggoron Sword':                                           (["the biggest blade", "a colossal cleaver"], "the Biggoron Sword", 'item'),
     'Master Sword':                                             (["evil's bane"], "the Master Sword", 'item'),
     'Deku Shield':                                              (["a wooden ward", "a burnable barrier"], "a Deku Shield", 'item'),
@@ -164,16 +185,10 @@ hintTable = {
     'Deku Seeds (30)':                                          (["catapult ammo", "lots-o-seeds"], "Deku Seeds (30 pieces)", 'item'),
     'Gold Skulltula Token':                                     (["proof of destruction", "an arachnid chip", "spider remains", "one percent of a curse"], "a Gold Skulltula Token", 'item'),
 
-    '10 Big Poes':                                              (["#Big Poes# leads to", "#ghost hunters# will be rewarded with"], None, 'always'),
     'Deku Theater Mask of Truth':                               ("the #Mask of Truth# yields", None, 'always'),
-    '30 Gold Skulltula Reward':                                 ("slaying #30 Gold Skulltulas# reveals", None, 'always'),
-    '40 Gold Skulltula Reward':                                 ("slaying #40 Gold Skulltulas# reveals", None, 'always'),
-    '50 Gold Skulltula Reward':                                 ("slaying #50 Gold Skulltulas# reveals", None, 'always'),
-    'Ocarina of Time':                                          ("the #treasure thrown by Princess Zelda# is", None, 'always'),
-    'Song from Ocarina of Time':                                ("the #Ocarina of Time# teaches", None, 'always'),
-    'Biggoron':                                                 ("#Biggoron# crafts", None, 'always'),
     'Frog Ocarina Game':                                        (["an #amphibian feast# yields", "the #croaking choir's magnum opus# awards", "the #froggy finale# yields"], "the final reward from the #Frogs of Zora's River# is", 'always'),
 
+    'Song from Ocarina of Time':                                ("the #Ocarina of Time# teaches", None, ['song', 'sometimes']),
     'Song from Composer Grave':                                 (["in the #Composers' Grave#, ReDead guard", "the #Composer Brothers# wrote"], None, ['song', 'sometimes']),
     'Sheik Forest Song':                                        ("deep in #the forest# Sheik teaches", None, ['song', 'sometimes']),
     'Sheik at Temple':                                          ("Sheik waits at a #monument to time# to teach", None, ['song', 'sometimes']),
@@ -192,7 +207,13 @@ hintTable = {
     'Horseback Archery 1500 Points':                            ("mastery of #horseback archery# grants", "scoring 1500 in #horseback archery# grants", ['minigame', 'sometimes']),
     'Links House Cow':                                          ("the #bovine bounty of a horseback hustle# gifts", None, ['minigame', 'sometimes']),
 
-    'Deku Theater Skull Mask':                                  ("the #Skull Mask# yields", None, 'overworld'),
+    '10 Big Poes':                                              (["#Big Poes# leads to", "#ghost hunters# will be rewarded with"], None, ['overworld', 'sometimes']),
+    'Deku Theater Skull Mask':                                  ("the #Skull Mask# yields", None, ['overworld', 'sometimes']),
+    'Ocarina of Time':                                          ("the #treasure thrown by Princess Zelda# is", None, ['overworld', 'sometimes']),
+    'Biggoron':                                                 ("#Biggoron# crafts", None, ['overworld', 'sometimes']),
+    '50 Gold Skulltula Reward':                                 ("slaying #50 Gold Skulltulas# reveals", None, ['overworld', 'sometimes']),
+    '40 Gold Skulltula Reward':                                 ("slaying #40 Gold Skulltulas# reveals", None, ['overworld', 'sometimes']),
+    '30 Gold Skulltula Reward':                                 ("slaying #30 Gold Skulltulas# reveals", None, ['overworld', 'sometimes']),
     '20 Gold Skulltula Reward':                                 ("slaying #20 Gold Skulltulas# reveals", None, ['overworld', 'sometimes']),
     'Anjus Chickens':                                           ("#collecting cuccos# rewards", None, 'sometimes'),
     'Darunias Joy':                                             ("#Darunia's dance# leads to", None, ['overworld', 'sometimes']),
@@ -254,7 +275,7 @@ hintTable = {
     'Shadow Temple Warp Region -> Shadow Temple Entryway':      ("at the back of #the Graveyard#, there is", None, 'entrance'),
     'Lake Hylia -> Water Temple Lobby':                         ("deep #under a vast lake#, one can find", None, 'entrance'),
     'Forest Temple Entrance Ledge -> Forest Temple Lobby':      ("deep #within the Meadow#, one can find", None, 'entrance'),
-    'Gerudo Fortress -> Gerudo Training Grounds Lobby':         ("#thieves# train within", None, 'entrance'),
+    'Gerudo Fortress -> Gerudo Training Grounds Lobby':         ("paying a fee #within Gerudo's Fortress# grants access to", None, 'entrance'),
     'Zoras Fountain Ice Ledge -> Ice Cavern Beginning':         ("in #a frozen fountain#, an opening leads to", None, 'entrance'),
     'Zoras Fountain -> Jabu Jabus Belly Beginning':             ("inside #Jabu Jabu#, one can find", None, 'entrance'),
 
@@ -275,7 +296,7 @@ hintTable = {
     'Castle Town Treasure Chest Game':                          ("the #Treasure Chest Game#", None, 'region'),
     'Castle Town Bombchu Shop':                                 ("the #Bombchu Shop#", None, 'region'),
     'Castle Town Man in Green House':                           ("Man in Green's House", None, 'region'),
-    'Windmill':                                                 ("Windmill", None, 'region'),
+    'Windmill':                                                 ("the #Windmill#", None, 'region'),
     'Carpenter Boss House':                                     ("the #Carpenters' Boss House#", None, 'region'),
     'House of Skulltula':                                       ("the #House of Skulltulas#", None, 'region'),
     'Impas House':                                              ("Impa's House", None, 'region'),
@@ -288,11 +309,11 @@ hintTable = {
     'Ingo Barn':                                                ("a #stable#", None, 'region'),
     'Lon Lon Corner Tower':                                     ("the #Lon Lon Tower#", None, 'region'),
     'Castle Town Bazaar':                                       ("the #Market Bazaar#", None, 'region'),
-    'Castle Town Shooting Gallery':                             ("Child Shooting Gallery", None, 'region'),
+    'Castle Town Shooting Gallery':                             ("a #Slingshot Shooting Gallery#", None, 'region'),
     'Kakariko Bazaar':                                          ("the #Kakariko Bazaar#", None, 'region'),
     'Kakariko Potion Shop Front':                               ("the #Kakariko Potion Shop#", None, 'region'),
     'Kakariko Potion Shop Back':                                ("the #Kakariko Potion Shop#", None, 'region'),
-    'Kakariko Shooting Gallery':                                ("Adult Shooting Gallery", None, 'region'),
+    'Kakariko Shooting Gallery':                                ("a #Bow Shooting Gallery#", None, 'region'),
     'Colossus Fairy':                                           ("a #Great Fairy Fountain#", None, 'region'),
     'Hyrule Castle Fairy':                                      ("a #Great Fairy Fountain#", None, 'region'),
     'Ganons Castle Fairy':                                      ("a #Great Fairy Fountain#", None, 'region'),
@@ -391,6 +412,18 @@ hintTable = {
     '1056':                                                     ("They say that the real Phantom Ganon is bright and loud.", None, 'junk'),
     '1057':                                                     ("They say that walking backwards is very fast.", None, 'junk'),
     '1058':                                                     ("They say that leaping above the Castle Town entrance enriches most children.", None, 'junk'),
+    '1059':                                                     ("They say that looking into darkness may find darkness looking back into you.", None, 'junk'),
+    '1060':                                                     ("You found a spiritual Stone! By which I mean, I worship Nayru.", None, 'junk'),
+    '1061':                                                     ("They say that the stick is mightier than the sword.", None, 'junk'),
+    '1062':                                                     ("Open your eyes.^Open your eyes.^Wake up, @.", None, 'junk'),
+    '1063':                                                     ("They say that arbitrary code execution leads to the credits sequence.", None, 'junk'),
+    '1064':                                                     ("They say that Twinrova always casts the same spell the first three times.", None, 'junk'),
+    '1065':                                                     ("They say that the Development branch may be unstable.", None, 'junk'),
+    '1066':                                                     ("You're playing a Randomizer. I'm randomized!^Here's a random number:  #4#.&Enjoy your Randomizer!", None, 'junk'),
+    '1067':                                                     ("They say Ganondorf's bolts can be reflected with glass or steel.", None, 'junk'),
+    '1068':                                                     ("They say Ganon's tail is vulnerable to nuts, arrows, swords, explosives, hammers...^...sticks, seeds, boomerangs...^...rods, shovels, iron balls, angry bees...", None, 'junk'),
+    '1069':                                                     ("They say that you're wasting time reading this hint, but I disagree. Talk to me again!", None, 'junk'),
+    '1070':                                                     ("They say Ganondorf knows where to find the instrument of his doom.", None, 'junk'),
 
     'Deku Tree':                                                ("an ancient tree", "Deku Tree", 'dungeonName'),
     'Dodongos Cavern':                                          ("an immense cavern", "Dodongo's Cavern", 'dungeonName'),
@@ -405,20 +438,36 @@ hintTable = {
     'Gerudo Training Grounds':                                  ("the test of thieves", "Gerudo Training Grounds", 'dungeonName'),
     'Ganons Castle':                                            ("a conquered citadel", "Ganon's Castle", 'dungeonName'),
     
-    'Queen Gohma':                                              ("One inside an #ancient tree#...^", "One in the #Deku Tree#...^", 'boss'),
-    'King Dodongo':                                             ("One within an #immense cavern#...^", "One in #Dodongo's Cavern#...^", 'boss'),
-    'Barinade':                                                 ("One in the #belly of a deity#...^", "One in #Jabu Jabu's Belly#...^", 'boss'),
-    'Phantom Ganon':                                            ("One in a #deep forest#...^", "One in the #Forest Temple#...^", 'boss'),
-    'Volvagia':                                                 ("One on a #high mountain#...^", "One in the #Fire Temple#...^", 'boss'),
-    'Morpha':                                                   ("One under a #vast lake#...^", "One in the #Water Temple#...^", 'boss'),
-    'Bongo Bongo':                                              ("One within the #house of the dead#...^", "One in the #Shadow Temple#...^", 'boss'),
-    'Twinrova':                                                 ("One inside a #goddess of the sand#...^", "One in the #Spirit Temple#...^", 'boss'),
-    'Links Pocket':                                             ("One in #@'s pocket#...^", "One #@ already has#...^", 'boss'),
-    'Spiritual Stone Text Start':                               ("Ye who owns 3 Spiritual Stones...^", None, 'boss'),
-    'Spiritual Stone Text End':                                 ("\x13\x08Stand with the Ocarina of Time&and play the Song of Time.", None, 'boss'),
-    'Medallion Text Start':                                     ("When evil rules all, an awakening&voice from the Sacred Realm will&call those destined to be Sages,&who dwell in the \x05\x41five temples\x05\x40.^", None, 'boss'),
-    'Medallion Text End':                                       ("\x13\x12Together with the Hero of Time,&the awakened ones will bind&the evil and return the light&of peace to the world.", None, 'boss'),
-    
+    'Queen Gohma':                                              ("One inside an #ancient tree#...", "One in the #Deku Tree#...", 'boss'),
+    'King Dodongo':                                             ("One within an #immense cavern#...", "One in #Dodongo's Cavern#...", 'boss'),
+    'Barinade':                                                 ("One in the #belly of a deity#...", "One in #Jabu Jabu's Belly#...", 'boss'),
+    'Phantom Ganon':                                            ("One in a #deep forest#...", "One in the #Forest Temple#...", 'boss'),
+    'Volvagia':                                                 ("One on a #high mountain#...", "One in the #Fire Temple#...", 'boss'),
+    'Morpha':                                                   ("One under a #vast lake#...", "One in the #Water Temple#...", 'boss'),
+    'Bongo Bongo':                                              ("One within the #house of the dead#...", "One in the #Shadow Temple#...", 'boss'),
+    'Twinrova':                                                 ("One inside a #goddess of the sand#...", "One in the #Spirit Temple#...", 'boss'),
+    'Links Pocket':                                             ("One in #@'s pocket#...", "One #@ already has#...", 'boss'),
+
+    'bridge_vanilla':                                           ("the #Shadow and Spirit Medallions# as well as the #Light Arrows#", None, 'bridge'),
+    'bridge_stones':                                            ("all Spiritual Stones", None, 'bridge'),
+    'bridge_medallions':                                        ("all Medallions", None, 'bridge'),
+    'bridge_dungeons':                                          ("all Spiritual Stones and Medallions", None, 'bridge'),
+    'bridge_tokens':                                            ("Gold Skulltula Tokens", None, 'bridge'),
+
+    'ganonBK_dungeon':                                          ("hidden somewhere #inside its castle#", None, 'ganonBossKey'),
+    'ganonBK_vanilla':                                          ("kept in a big chest #inside its tower#", None, 'ganonBossKey'),
+    'ganonBK_keysanity':                                        ("hidden somewhere #in Hyrule#", None, 'ganonBossKey'),
+    'ganonBK_triforce':                                         ("given to the Hero once the #Triforce# is completed", None, 'ganonBossKey'),
+
+    'lacs_vanilla':                                             ("the #Shadow and Spirit Medallions#", None, 'lacs'),
+    'lacs_medallions':                                          ("all Medallions", None, 'lacs'),
+    'lacs_stones':                                              ("all Spiritual Stones", None, 'lacs'),
+    'lacs_dungeons':                                            ("all Spiritual Stones and Medallions", None, 'lacs'),
+
+    'Spiritual Stone Text Start':                               ("3 Spiritual Stones found in Hyrule...", None, 'altar'),
+    'Child Altar Text End':                                     ("\x13\x08Ye who may become a Hero...&Stand with the Ocarina and&play the Song of Time.", None, 'altar'),
+    'Adult Altar Text Start':                                   ("When evil rules all, an awakening&voice from the Sacred Realm will&call those destined to be Sages,&who dwell in the \x05\x41five temples\x05\x40.", None, 'altar'),
+
     'Validation Line':                                          ("Hmph... Since you made it this far,&I'll let you know what glorious&prize of Ganon's you likely&missed out on in my tower.^Behold...^", None, 'validation line'),
     'Light Arrow Location':                                     ("Ha ha ha... You'll never beat me by&reflecting my lightning bolts&and unleashing the arrows from&", None, 'Light Arrow Location'),
     '2001':                                                     ("Oh! It's @.&I was expecting someone called&Sheik. Do you know what&happened to them?", None, 'ganonLine'),

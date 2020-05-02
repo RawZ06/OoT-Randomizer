@@ -7,11 +7,16 @@ Please refrain from asking questions and from reporting issues in the main Rando
 Instead, you can open an issue on this fork [here](https://github.com/Roman971/OoT-Randomizer/issues) or contact me directly on discord (Roman#7295) for any help, report or request.
 
 Differences between this branch and the main Dev branch (on [Testrunner's Fork](https://github.com/TestRunnerSRL/OoT-Randomizer/tree/Dev)):
-* "Add Open Kakariko Gate" option to have the gate to Death Mountain open from the start
-* "Triforce Hunt" option from [KevinPal aka shadeslayer's Triforce Hunt Branch](https://github.com/KevinPal/OoT-Randomizer/tree/triforce)
-* New cosmetic options to configure HUD Button colors from [Cuphat's HUD Colors   Branch](https://github.com/Cuphat/OoT-Randomizer/tree/hud_colors)
+* Various GUI tweaks and improvements along with setting tooltip/option changes
+* "Open Kakariko Gate" option to have the gate to Death Mountain being open from the start, as well as the Mask Shop opening upon obtaining Zelda's Letter without needing to show it to the guard from [Cuphat's Open Mask Shop Branch](https://github.com/Cuphat/OoT-Randomizer/tree/open_kak_mask_shop)
+* HUD Button colors can be set or randomized separately for the A, B, C and Start buttons and have more available options.
 * "Entrance Shuffle" (aka ER) is changed into a set of more advanced and customizable options including mixing entrance pools, decoupling entrances and randomizing overworld spawns or warp songs.
 * Picking up Gold Skulltula Tokens in non-Tokensanity displays a self-closing textbox which no longer freezes the player.
+* "Bombchus In Logic" is improved to include bombchu drops (from grass, pots, etc) that start dropping once you have found Bombchus.
+* The "Skip First Dampe Race" setting is changed to "Skip First Minigame Phases", which also applies to the Horseback Archery minigame, and allows you to get both rewards at once if you score 1500 points in a single attempt.
+* New Inventory/Equipment/Status Icons Display in File Select from [rlbond86's Menu Icons Branch](https://github.com/rlbond86/OoT-Randomizer/tree/menu_icons)
+* New "Shuffle Medigoron & Carpet Salesman" option to have both of these NPCs sell a randomized item once at the price of 200 Rupees.
+* The Adult Temple of Time Altar provides additional information on Rainbow Bridge requirements as well as the location of Ganon's Castle Boss Key, always available under any settings.
 
 ## Index
 
@@ -21,6 +26,7 @@ Differences between this branch and the main Dev branch (on [Testrunner's Fork](
   * [Settings](#settings)
   * [Known Issues](#known-issues)
 * [Changelog](#changelog)
+  * [5.2](#52)
   * [5.1](#51)
   * [5.0](#50)
   * [4.0](#40)
@@ -49,7 +55,7 @@ The randomizer will ensure a glitchless path through the seed will exist, but th
 Glitchless can still mean that clever or unintuitive strategies may be required involving the use of things like Hover Boots, the Hookshot, or other items that may not have been as important in the original game.
 
 Each major dungeon will earn you a random Spiritual Stone or Medallion once completed.
-The particular dungeons where these can be found, as well as other relevant dungeon inforomation can be viewed in the pause menu by holding the "A" button on the C-Item Menu.
+The particular dungeons where these can be found, as well as other relevant dungeon information can be viewed in the pause menu by holding the "A" button on the C-Item Menu.
 
 As a service to the player in this very long game, many cutscenes have been greatly shortened, and text is as often as possible either omitted or sped up. It is likely that someone somewhere will miss the owl's interjections; to that person, I'm sorry I guess?
 
@@ -62,6 +68,20 @@ With a game the size of _Ocarina of Time_, it's quite easy for new Randomizer pl
 The OoT Randomizer offers many different settings to customize your play experience.
 A comprehensive list can be found [here](https://wiki.ootrandomizer.com/index.php?title=Readme).
 
+#### Plandomizer
+
+"Plan"-domizer is a feature that gives some additional control over the seed generation using a separate distribution file. In such a file you can:
+* Place items at specific locations or restrict items from being placed at specific locations.
+* Add or remove items from the item pool.
+* Select items to start with.
+* Set specific dungeons to be vanilla vs Master Quest.
+* Set which trials are required.
+* Set any regular settings.
+
+Caveat: Plandomizer settings will override most settings in the main OoTR generator settings, particularly list-based settings like enabled tricks or starting inventory. For example, if the Plandomizer distribution file contains an empty list of starting items, and the generator settings include additional starting equipment, the player will start with none of them instead. You will have to edit the Plandomizer file to change such settings, or **delete** completely the line in the Plandomizer file with the given setting to allow the main generator to alter the setting.
+
+See [the Plandomizer wiki page](https://wiki.ootrandomizer.com/index.php?title=Plandomizer) for full details.
+
 ### Known issues
 
 Unfortunately, a few known issues exist. These will hopefully be addressed in future versions.
@@ -73,16 +93,114 @@ easily avoided by playing on a different emulator and probably also avoidable by
 * Executing the collection delay glitch on various NPCs may have unpredictable and undesirable consequences.
 * Saving and quitting on the very first frame after becoming an adult when you would trigger the Light Arrow cutscene can have undesired consequences. Just don't
 do that.
-* This randomizer is based on the 1.0 version of _Ocarina of Time_, so some of its specific bugs remain. Some of these like "empty bomb" can be disadvantagous to the
+* This randomizer is based on the 1.0 version of _Ocarina of Time_, so some of its specific bugs remain. Some of these like "empty bomb" can be disadvantageous to the
 player.
 
 ## Changelog
+
+### Dev
+
+#### New Features
+* New cosmetic setting `HUD Button Colors`
+  * The buttons shown on the HUD can be colored to match the N64 or Gamecube color scheme.
+  * Or you can completely randomize all the button colors.
+* New cosmetic setting `Item Model Colors Match Cosmetics`
+  * Freestanding models like heart containers, gauntlets, and heart/magic drops will match their respective color settings.
+  * Tunics are not affected, in order to keep freestanding tunics recognizable.
+
+#### Bug Fixes
+* Limit Kokiri Tunic RGB values in Glitched Logic to prevent Weirdshot crashes.
+* Prevent an errant `@` from showing up in Triforce Hunt.
+
+#### Other Changes
+* Performance improvements to seed generation.
+* Updated development n64 compilation process to use latest available toolchain.
+* Added decompressor source and updated Decompress binaries.
+* Mweep.
+
+### 5.2
+
+#### New Features
+* Triforce Hunt
+  * Collect some number of Triforce Pieces to beat the game instead of beating Ganon.
+  * Multiworld Triforce counts are collective, so once the total is reached across all players everyone wins.
+  * If enabled via randomizing main rules, the count is always 20.
+* Separate Double Defense model
+  * Now appears as a color-shifted version of the Heart Container, with a transparent interior and prominent gold border.
+* Visual Stone of Agony indicator
+  * When the player has the Stone of Agony, it will appear on-screen above the rupee count when the player is near a hidden grotto.
+  * The icon vibrates based on proximity to the grotto entrance, similar to the rumble pak.
+  * A real rumble pak is not required.
+* Starting Inventory
+  * A new tab in the GUI allows setting initial inventory, without having to create a Plandomizer file.
+  * Items are divided into sections in the GUI based on category.
+  * Trade quest items, Gerudo Membership Card, Scarecrow Song not included.
+    * To start with the Gerudo Membership Card, set `Gerudo Fortress` to `Open Fortress` and disable `Shuffle Gerudo Card` ('Main Rules' tab).
+    * To start with the Scarecrow Song, enable `Free Scarecrow's Song` ('Other' tab).
+
+#### Updated Settings 
+* Open Zora Fountain now has an open only adult option.
+* Added a new setting `Ice Trap Appearance` to select whether ice traps appear as major items (the default), junk items, or anything. This appearance can affect chest size with `Chest Size Matches Contents` enabled.
+* Removed settings `Start with Fast Travel`, `Start with Tycoon's Wallet`, `Start with Deku Equipment`.
+  * These have been replaced with settings in the "Starting Inventory" tab.
+* New settings `Start with Consumables` (enable to start with max Sticks, Nuts, and ammo), `Starting Hearts` (changes starting max health).
+* New list settings `Starting Equipment` (swords, shields, strength, etc.), `Starting Items` (c-items), `Starting Songs` (songs).
+* Logic now requires Stone of Agony to access any hidden grotto.
+  * A new trick `Hidden Grottos without Stone of Agony` will bypass this.
+  * Stone of Agony is now only considered a useless item (for barren areas) when this trick is on and Gossip Stones do not use it.
+* Added a new trick `Goron City Spinning Pot PoH with Strength`, which allows stopping the Spinning Pot using a bomb flower.
+* Hell Mode preset includes both the above tricks.
+* Tricks enabled/disabled in a Plandomizer file now take precedence over Tricks in 'Detailed Logic', even if the Plandomizer file has an empty list.
+  * An empty list means the seed will be beatable without any tricks.
+  * If there's no `allowed_tricks` item in the file, the Detailed Logic tricks apply instead.
+  * If there is an `allowed_tricks` list in the file, it will not be possible to disable any of the enabled tricks (or enabling more) without editing the file.
+
+#### Other Changes
+* Cosmetic heart color setting now applies in the file select screen.
+* Cosmetic tunic color setting now applies to the icons in the pause menu.
+* Non-Always Location hints cannot be placed for an area that already has a Foolish hint.
+  * If the location hint is placed first, then it can still appear in a foolish hinted area, however in Tournament hint distribution the Foolish hints are placed first so that cannot happen.
+* The location containing Light Arrows will be considered a hinted location if Ganondorf's hint can be reached without them.
+* Ganondorf no longer hints at his Boss Key chest contents, except when Light Arrows don't exist (only possible in Triforce Hunt).
+* Improved Entrance Randomizer hints.
+* Updated Compressor. The GUI progress bar is now granular. If for some reason, the rom won't fit into 32MB, then the compressor will increase the output size.
+* Revised some settings tooltips.
+* Refactored Logic once again. It now uses helper json rules and rules can reference other rules.
+* Disabled settings don't show up in the spoiler.
+* Plando will now accept JSON lists for `item` in the location dictionary to randomly choose between for placement.
+  * Attempts to not exceed item pool values until all the pool counts for the items in the list are reached.
+* Plando locations are matched without regard to case.
+* "Start with" settings are now handled by the Plando library.
+* Further seed generation speed improvements.
+* The main search algorithm was renamed Search (from Playthrough) to avoid confusion with the spoiler playthrough.
+* General code cleanup and typo fixes.
+* Added more Plando unittests.
+
+#### Bug Fixes
+* Minor stability fix in Plando.
+* Spoilers for plando'd seeds now correctly show the tricks enabled for the seed.
+* Plando no longer occasionally attempts to place an item on a location where it's not allowed.
+* Plando starting items and items set in specific locations now count toward the pool allocation. (Starting items are replaced with junk.)
+* Plando now refuses to place more than the maximum amount of bottles, adult trade items, shop items, or total non-junk items.
+* Plando no longer places Ice Traps as Junk if `Ice Traps` is set to 'off'.
+* Other various Plando bug fixes.
+* Starting items for adult that auto-equip should do so correctly now. (Non-Kokiri Tunics won't autoequip at the moment.)
+* Fixed two chests in MQ Shadow Temple that had swapped names in plando and spoilers.
+* Removed (unnecessarily) duplicated/overlapping hints.
+* Hints that should come in multiples (duplicates) no longer come in singletons in certain corner cases.
+* Randomizing main rules now works correctly.
+* Removed a misleading random "trials" value from the non-randomized settings in the spoiler.
+* Fix seed values with spaces no longer working.
+* Removed a mispasted option description from Gauntlets colors tooltips.
+* Major armips fix should prevent some crashes in Dev builds. (Devs: required armips version >= 0.10.0-68-g8669ffd)
+* Miscellaneous logic fixes.
+* Other bug fixes.
 
 ### 5.1
 
 #### New Features
 * `Skip First Dampé Race` 
-  * Allows getting both reward in one race if the 60 second target is cleared
+  * Allows getting both rewards in one race if the 60 second target is cleared
 * Rupee Icon Color changes based on your current wallet upgrade
 
 #### Updated Settings 
@@ -90,6 +208,10 @@ player.
 * `Tokensanity: Overworld Only` 
   * Shuffles Gold Skultulla Tokens in the overworld to compliment `Dungeons Only`
 * Configurable Skulltula target for the Bridge Requirement
+* `Randomize Main Rule Settings` still allows setting the `MQ Dungeon Count`
+* `Always Guaranteed Hints` are now determined conditionally based on settings
+* `Default Presets` are updated to better reflect first time beginner settings
+  * The previous `Beginner Preset` is renamed to `Easy Preset`
 
 #### Bug Fixes
 * Improve stability of music related features
@@ -209,7 +331,7 @@ player.
 * Quick boot equips
   * Use D-pad left to equip Iron Boots if they're in the inventory, or D-pad right to equip Hover Boots if they're in the inventory.
   * Press the button again to equip Kokiri Boots.
-* Quck Ocarina
+* Quick Ocarina
   * Use D-pad down to pull out the Ocarina.
 * Freestanding models
   * All freestanding item locations now display the model of the item you will receive.

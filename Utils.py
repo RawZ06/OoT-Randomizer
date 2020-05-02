@@ -1,3 +1,5 @@
+import io
+import json
 import os, os.path
 import subprocess
 import sys
@@ -52,6 +54,20 @@ def default_output_path(path):
     return path
 
 
+def read_json(file_path):
+    json_string = ""
+    with io.open(file_path, 'r') as file:
+        for line in file.readlines():
+            json_string += line.split('#')[0].replace('\n', ' ')
+    json_string = re.sub(' +', ' ', json_string)
+    try:
+        return json.loads(json_string)
+    except json.JSONDecodeError as error:
+        raise Exception("JSON parse error around text:\n" + \
+                        json_string[error.pos-35:error.pos+35] + "\n" + \
+                        "                                   ^^\n")
+
+
 def open_file(filename):
     if sys.platform == 'win32':
         os.startfile(filename)
@@ -69,12 +85,12 @@ def close_console():
             pass
 
 def get_version_bytes(a):
-    version_bytes = [0x00, 0x00, 0x00]
+    version_bytes = [0x00, 0x00, 0x00, 0x00]
     if not a:
-        return version_bytes;
-    sa = a.replace('v', '').replace(' ', '.').split('.')
+        return version_bytes
+    sa = a.replace('R-', '').replace('v', '').replace(' ', '.').split('.')
 
-    for i in range(0,3):
+    for i in range(0, min(len(sa), 4)):
         try:
             version_byte = int(sa[i])
         except ValueError:
@@ -95,7 +111,7 @@ def compare_version(a, b):
     sa = get_version_bytes(a)
     sb = get_version_bytes(b)
 
-    for i in range(0,3):
+    for i in range(0, 4):
         if sa[i] > sb[i]:
             return 1
         if sa[i] < sb[i]:

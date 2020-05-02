@@ -3,12 +3,13 @@ import struct
 import itertools
 import re
 import zlib
+from collections import defaultdict
 
 from World import World
 from Rom import Rom
 from Spoiler import Spoiler
 from LocationList import business_scrubs
-from Hints import writeGossipStoneHints, buildBossRewardHints, \
+from Hints import writeGossipStoneHints, buildAltarHints, \
         buildGanonText, getSimpleHintNoPrefix
 from Utils import data_path
 from Messages import read_messages, update_message_by_id, read_shop_items, \
@@ -18,6 +19,7 @@ from Messages import read_messages, update_message_by_id, read_shop_items, \
 from OcarinaSongs import replace_songs
 from MQ import patch_files, File, update_dmadata, insert_space, add_relocations
 from SaveContext import SaveContext
+import StartingItems
 
 
 def patch_rom(spoiler:Spoiler, world:World, rom:Rom):
@@ -47,27 +49,33 @@ def patch_rom(spoiler:Spoiler, world:World, rom:Rom):
         keatonBytes = bytearray([a ^ b for a, b in zip(keatonBytesDiff, originalBytes)])
         rom.write_bytes(writeAddress, keatonBytes)
 
-    # Load triforce model into a file
-    triforce_obj_file = File({
-            'Name':'shop1_room_1',
-            'Start':'0',
-            'End':'0',
-        })
-
+    # Load Triforce model into a file
+    triforce_obj_file = File({ 'Name': 'object_gi_triforce' })
     triforce_obj_file.copy(rom)
-
     with open(data_path('triforce.bin'), 'rb') as stream:
         obj_data = stream.read()
         rom.write_bytes(triforce_obj_file.start, obj_data)
-
-    triforce_obj_file.end = triforce_obj_file.start + len(obj_data)
-
+        triforce_obj_file.end = triforce_obj_file.start + len(obj_data)
     update_dmadata(rom, triforce_obj_file)
+    # Add it to the extended object table
+    add_to_extended_object_table(rom, 0x193, triforce_obj_file)
 
-    #Add to extended object table
-    sym = rom.sym('EXTENDED_OBJECT_TABLE')
-    rom.write_int32(sym, triforce_obj_file.start)
-    rom.write_int32(sym + 4, triforce_obj_file.end)
+    # Build a Double Defense model from the Heart Container model
+    dd_obj_file = File({ 
+        'Name': 'object_gi_hearts',
+        'Start': '014D9000',
+        'End': '014DA590',
+    })
+    dd_obj_file.copy(rom)
+    # Update colors for the Double Defense variant
+    rom.write_bytes(dd_obj_file.start + 0x1294, [0xFF, 0xCF, 0x0F]) # Exterior Primary Color
+    rom.write_bytes(dd_obj_file.start + 0x12B4, [0xFF, 0x46, 0x32]) # Exterior Env Color
+    rom.write_int32s(dd_obj_file.start + 0x12A8, [0xFC173C60, 0x150C937F]) # Exterior Combine Mode
+    rom.write_bytes(dd_obj_file.start + 0x1474, [0xFF, 0xFF, 0xFF]) # Interior Primary Color
+    rom.write_bytes(dd_obj_file.start + 0x1494, [0xFF, 0xFF, 0xFF]) # Interior Env Color
+    update_dmadata(rom, dd_obj_file)
+    # Add it to the extended object table
+    add_to_extended_object_table(rom, 0x194, dd_obj_file)
 
     # Force language to be English in the event a Japanese rom was submitted
     rom.write_byte(0x3E, 0x45)
@@ -153,8 +161,8 @@ def patch_rom(spoiler:Spoiler, world:World, rom:Rom):
 
     # songs as items flag
     songs_as_items = world.shuffle_song_items or \
-                     world.start_with_fast_travel or \
-                     world.distribution.song_as_items
+                     world.distribution.song_as_items or \
+                     world.starting_songs
 
     # Speed learning Zelda's Lullaby
     rom.write_int32s(0x02E8E90C, [0x000003E8, 0x00000001]) # Terminator Execution
@@ -802,13 +810,6 @@ def patch_rom(spoiler:Spoiler, world:World, rom:Rom):
                 copy_entrance_record(blue_out_data + 2, new_entrance["blue_warp"] + 2, 2)
                 copy_entrance_record(replaced_entrance["index"], new_entrance["blue_warp"], 2)
 
-    # Set grotto entrances indexes, computed from their unique grotto IDs and their attributed entrance ranges (0x10XX and 0x20XX)
-    for entrance in world.get_shuffled_entrances(type='Grotto'):
-        if entrance.primary:
-            entrance.data['index'] = 0x1000 + entrance.data['grotto_id']
-        else:
-            entrance.data['index'] = 0x2000 + entrance.data['grotto_id']
-
     exit_table = generate_exit_lookup_table()
     
     if world.entrance_shuffle:
@@ -845,33 +846,37 @@ def patch_rom(spoiler:Spoiler, world:World, rom:Rom):
     if world.shuffle_dungeon_entrances:
         rom.write_byte(rom.sym('DUNGEONS_SHUFFLED'), 1)
 
-        # Connect lake hylia fill exit to revisit exit (Hylia blue will then be rewired below)
+        # Connect lake hylia fill exit to revisit exit
         rom.write_int16(0xAC995A, 0x060C)
 
-        # Remove deku sprout and drop player at SFM after forest (SFM blue will then be rewired by ER below)
-        rom.write_int16(0xAC9F96, 0x0608)
-
-        #Tell the well water we are always a child.
+        # Tell the well water we are always a child.
         rom.write_int32(0xDD5BF4, 0x00000000)
 
-        #Tell Sheik at Ice Cavern we are always an Adult
+        # Tell Sheik at Ice Cavern we are always an Adult
         rom.write_int32(0xC7B9C0, 0x00000000)
         rom.write_int32(0xC7BAEC, 0x00000000)
         rom.write_int32(0xc7BCA4, 0x00000000)
 
-        #Make the Adult well blocking stone dissappear if the well has been drained by
-        #checking the well drain event flag instead of links age. This actor doesn't need a
-        #code check for links age as the stone is absent for child via the scene alternate
-        #lists. So replace the age logic with drain logic.
+        # Make the Adult well blocking stone dissappear if the well has been drained by
+        # checking the well drain event flag instead of links age. This actor doesn't need a
+        # code check for links age as the stone is absent for child via the scene alternate
+        # lists. So replace the age logic with drain logic.
         rom.write_int32(0xE2887C, rom.read_int32(0xE28870)) #relocate this to nop delay slot
         rom.write_int32(0xE2886C, 0x95CEB4B0) # lhu
         rom.write_int32(0xE28870, 0x31CE0080) # andi
 
         remove_entrance_blockers(rom)
 
-        #Purge temp flags on entrance to spirit from colossus through the front
-        #door.
+        # Purge temp flags on entrance to spirit from colossus through the front door.
         rom.write_byte(0x021862E3, 0xC2)
+
+    if world.shuffle_overworld_entrances or world.shuffle_dungeon_entrances:
+        # Remove deku sprout and drop player at SFM after forest completion
+        rom.write_int16(0xAC9F96, 0x0608)
+
+    if world.spawn_positions:
+        # Fix save warping inside Link's House to not be a special case
+        rom.write_int32(0xB06318, 0x00000000)
 
     # Set entrances to update, except grotto entrances which are handled on their own at a later point
     set_entrance_updates(filter(lambda entrance: entrance.type != 'Grotto', world.get_shuffled_entrances()))
@@ -981,15 +986,17 @@ def patch_rom(spoiler:Spoiler, world:World, rom:Rom):
     rom.write_int16(0x00E1F3CA, 0x5036)
     rom.write_int16(0x00E1F3CC, 0x5036)
 
-    if world.no_first_dampe_race:
-        save_context.write_bits(0x00D4 + 0x48 * 0x1C + 0x08 + 0x3, 0x10) # Beat First Dampe Race (& Chest Spawned)
-
     # Make the Kakariko Gate not open with the MS
     if not world.open_kakariko:
         rom.write_int32(0xDD3538, 0x34190000) # li t9, 0
+        rom.write_byte(rom.sym('OPEN_KAKARIKO'), 0)
+    else:
+        rom.write_byte(rom.sym('OPEN_KAKARIKO'), 1)
 
-    if world.open_fountain:
-        save_context.write_bits(0x0EDB, 0x08) #Move king zora
+    if world.zora_fountain == 'open':
+        save_context.write_bits(0x0EDB, 0x08) # "Moved King Zora"
+    elif world.zora_fountain == 'adult':
+        rom.write_byte(rom.sym('MOVED_ADULT_KING_ZORA'), 1)
 
     # Make all chest opening animations fast
     rom.write_byte(rom.sym('FAST_CHESTS'), int(world.fast_chests))
@@ -1074,7 +1081,8 @@ def patch_rom(spoiler:Spoiler, world:World, rom:Rom):
 
     # Add a gate-opening guard on the Wasteland side of the Gerudo gate when the card is shuffled or certain levels of ER.
     # Overrides the generic guard at the bottom of the ladder in Gerudo Fortress
-    if world.shuffle_gerudo_card or world.shuffle_overworld_entrances or world.shuffle_special_interior_entrances:
+    if world.shuffle_gerudo_card or world.shuffle_overworld_entrances or \
+       world.shuffle_special_interior_entrances or world.spawn_positions:
         # Add a gate opening guard on the Wasteland side of the Gerudo Fortress' gate
         new_gate_opening_guard = [0x0138, 0xFAC8, 0x005D, 0xF448, 0x0000, 0x95B0, 0x0000, 0x0301]
         rom.write_int16s(0x21BD3EC, new_gate_opening_guard)  # Adult Day
@@ -1091,6 +1099,7 @@ def patch_rom(spoiler:Spoiler, world:World, rom:Rom):
             save_context.addresses['keys']['spirit'].value = 3
 
     if world.start_with_rupees:
+        world.distribution.give_item('Rupees', 999)
         rom.write_byte(rom.sym('MAX_RUPEES'), 0x01)
 
     # Set starting time of day
@@ -1231,6 +1240,12 @@ def patch_rom(spoiler:Spoiler, world:World, rom:Rom):
     if not world.dungeon_mq['Jabu Jabus Belly'] and world.shuffle_scrubs == 'off':
         symbol = rom.sym('JABU_ELEVATOR_ENABLE')
         rom.write_byte(symbol, 0x01)
+
+    if world.no_first_minigame_phases:
+        save_context.write_bits(0x00D4 + 0x48 * 0x1C + 0x08 + 0x3, 0x10) # Beat First Dampe Race (& Chest Spawned)
+        rom.write_byte(rom.sym('CHAIN_HBA_REWARDS'), 1)
+        # Update the first horseback archery text to make it clear both rewards are available from the start
+        update_message_by_id(messages, 0x6040, "Hey newcomer, you have a fine \x01horse!\x04I don't know where you stole \x01it from, but...\x04OK, how about challenging this \x01\x05\x41horseback archery\x05\x40?\x04Once the horse starts galloping,\x01shoot the targets with your\x01arrows. \x04Let's see how many points you \x01can score. You get 20 arrows.\x04If you can score \x05\x411,000 points\x05\x40, I will \x01give you something good! And even \x01more if you score \x05\x411,500 points\x05\x40!\x0B\x02")
 
     # Sets hooks for gossip stone changes
 
@@ -1528,6 +1543,18 @@ def patch_rom(spoiler:Spoiler, world:World, rom:Rom):
         # Change first magic bean to cost 60 (is used as the price for the one time item when beans are shuffled)
         rom.write_byte(0xE209FD, 0x3C)
 
+    if world.shuffle_medigoron_carpet_salesman:
+        rom.write_byte(rom.sym('SHUFFLE_CARPET_SALESMAN'), 0x01)
+        # Update carpet salesman messages to better fit the fact that he sells a randomized item
+        update_message_by_id(messages, 0x6077, "\x06\x41Well Come!\x04I am selling stuff, strange and \x01rare, from all over the world to \x01everybody.\x01Today's special is...\x04A mysterious item! \x01Intriguing! \x01I won't tell you what it is until \x01I see the money....\x04How about \x05\x41200 Rupees\x05\x40?\x01\x01\x1B\x05\x42Buy\x01Don't buy\x05\x40\x02")
+        update_message_by_id(messages, 0x6078, "Thank you very much!\x04The mark that will lead you to\x01the Spirit Temple is the \x05\x41flag on\x01the left \x05\x40outside the shop.\x01Be seeing you!\x02")
+
+        rom.write_byte(rom.sym('SHUFFLE_MEDIGORON'), 0x01)
+        # Update medigoron messages to better fit the fact that he sells a randomized item
+        update_message_by_id(messages, 0x304C, "I have something cool right here.\x01How about it...\x07\x30\x4F\x02")
+        update_message_by_id(messages, 0x304D, "How do you like it?\x02")
+        update_message_by_id(messages, 0x304F, "How about buying this cool item for \x01200 Rupees?\x01\x1B\x05\x42Buy\x01Don't buy\x05\x40\x02")
+
     if world.shuffle_smallkeys == 'remove' or world.shuffle_bosskeys == 'remove' or world.shuffle_ganon_bosskey == 'remove':
         locked_doors = get_locked_doors(rom, world)
         for _,[door_byte, door_bits] in locked_doors.items():
@@ -1625,11 +1652,10 @@ def patch_rom(spoiler:Spoiler, world:World, rom:Rom):
                         map_message = "\x13\x76\x08You found the \x05\x41Dungeon Map\x05\x40\x01for %s\x05\x40!\x01It\'s %s!\x09" % (dungeon_name, "masterful" if world.dungeon_mq[dungeon] else "ordinary")
                     update_message_by_id(messages, map_id, map_message)
 
-    else:
-        # Set hints for boss reward shuffle
-        rom.write_bytes(0xE2ADB2, [0x70, 0x7A])
-        rom.write_bytes(0xE2ADB6, [0x70, 0x57])
-        buildBossRewardHints(world, messages)
+    # Set hints on the altar inside ToT
+    rom.write_int16(0xE2ADB2, 0x707A)
+    rom.write_int16(0xE2ADB6, 0x7057)
+    buildAltarHints(world, messages, include_rewards=not world.enhance_map_compass)
 
     if world.tokensanity == 'off':
         # Change the GS token pickup message to fade out after 2 seconds (40 frames)
@@ -1689,6 +1715,13 @@ def patch_rom(spoiler:Spoiler, world:World, rom:Rom):
     save_context.write_save_table(rom)
 
     return rom
+
+
+NUM_VANILLA_OBJECTS = 0x192
+def add_to_extended_object_table(rom, object_id, object_file):
+    extended_id = object_id - NUM_VANILLA_OBJECTS - 1
+    extended_object_table = rom.sym('EXTENDED_OBJECT_TABLE')
+    rom.write_int32s(extended_object_table + extended_id * 8, [object_file.start, object_file.end])
 
 
 item_row_struct = struct.Struct('>BBHHBBIIhh') # Match item_row_t in item_table.h
@@ -2053,7 +2086,7 @@ def boss_reward_index(world, boss_name):
 
 def configure_dungeon_info(rom, world):
     mq_enable = (world.mq_dungeons_random or world.mq_dungeons != 0 and world.mq_dungeons != 12)
-    mapcompass_keysanity = world.settings.enhance_map_compass
+    enhance_map_compass = world.settings.enhance_map_compass
 
     bosses = ['Queen Gohma', 'King Dodongo', 'Barinade', 'Phantom Ganon',
             'Volvagia', 'Morpha', 'Twinrova', 'Bongo Bongo']
@@ -2067,8 +2100,8 @@ def configure_dungeon_info(rom, world):
 
     rom.write_int32(rom.sym('cfg_dungeon_info_enable'), 1)
     rom.write_int32(rom.sym('cfg_dungeon_info_mq_enable'), int(mq_enable))
-    rom.write_int32(rom.sym('cfg_dungeon_info_mq_need_map'), int(mapcompass_keysanity))
-    rom.write_int32(rom.sym('cfg_dungeon_info_reward_need_compass'), int(mapcompass_keysanity))
-    rom.write_int32(rom.sym('cfg_dungeon_info_reward_need_altar'), int(not mapcompass_keysanity))
+    rom.write_int32(rom.sym('cfg_dungeon_info_mq_need_map'), int(enhance_map_compass))
+    rom.write_int32(rom.sym('cfg_dungeon_info_reward_need_compass'), int(enhance_map_compass))
+    rom.write_int32(rom.sym('cfg_dungeon_info_reward_need_altar'), int(not enhance_map_compass))
     rom.write_bytes(rom.sym('cfg_dungeon_rewards'), dungeon_rewards)
     rom.write_bytes(rom.sym('cfg_dungeon_is_mq'), dungeon_is_mq)

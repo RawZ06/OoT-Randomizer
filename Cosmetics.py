@@ -1,7 +1,9 @@
 from version import __version__
+from Utils import data_path
 import random
 import Music as music
 import Sounds as sfx
+import IconManip as icon
 
 from collections import namedtuple
 Color = namedtuple('Color', '  R     G     B')
@@ -110,23 +112,101 @@ magic_colors = {
     "White":             Color(0xFF, 0xFF, 0xFF),
 }
 
+#                        A Button                 Text Cursor              Shop Cursor              Save/Death Cursor
+#                        Pause Menu A Cursor      Pause Menu A Icon        A Note
 a_button_colors = {
-    "N64 Blue":         Color(0x5A, 0x5A, 0xFF),
-    "GameCube Green":   Color(0x00, 0xC8, 0x32),
+    "N64 Blue":         (Color(0x5A, 0x5A, 0xFF), Color(0x00, 0x50, 0xC8), Color(0x00, 0x50, 0xFF), Color(0x64, 0x64, 0xFF),
+                         Color(0x00, 0x32, 0xFF), Color(0x00, 0x64, 0xFF), Color(0x50, 0x96, 0xFF)),
+    "N64 Green":        (Color(0x00, 0x96, 0x00), Color(0x00, 0x96, 0x00), Color(0x00, 0x96, 0x00), Color(0x64, 0x96, 0x64),
+                         Color(0x00, 0x96, 0x00), Color(0x00, 0x96, 0x00), Color(0x00, 0x96, 0x00)),
+    "N64 Red":          (Color(0xC8, 0x00, 0x00), Color(0xC8, 0x00, 0x00), Color(0xC8, 0x00, 0x00), Color(0xC8, 0x64, 0x64),
+                         Color(0xC8, 0x00, 0x00), Color(0xC8, 0x00, 0x00), Color(0xC8, 0x00, 0x00)),
+    "GameCube Green":   (Color(0x00, 0xC8, 0x32), Color(0x00, 0xC8, 0x50), Color(0x00, 0xFF, 0x50), Color(0x64, 0xFF, 0x64),
+                         Color(0x00, 0xFF, 0x32), Color(0x00, 0xFF, 0x64), Color(0x50, 0xFF, 0x96)),
+    "GameCube Red":     (Color(0xFF, 0x1E, 0x1E), Color(0xC8, 0x00, 0x00), Color(0xFF, 0x00, 0x50), Color(0xFF, 0x64, 0x64),
+                         Color(0xFF, 0x1E, 0x1E), Color(0xFF, 0x1E, 0x1E), Color(0xFF, 0x1E, 0x1E)),
+    "GameCube Grey":    (Color(0x78, 0x78, 0x78), Color(0x78, 0x78, 0x78), Color(0x78, 0x78, 0x78), Color(0x78, 0x78, 0x78),
+                         Color(0x78, 0x78, 0x78), Color(0x78, 0x78, 0x78), Color(0x78, 0x78, 0x78)),
+    "Yellow":           (Color(0xFF, 0xA0, 0x00), Color(0xFF, 0xA0, 0x00), Color(0xFF, 0xA0, 0x00), Color(0xFF, 0xA0, 0x00),
+                         Color(0xFF, 0xFF, 0x00), Color(0xFF, 0x96, 0x00), Color(0xFF, 0xFF, 0x32)),
+    "Black":            (Color(0x10, 0x10, 0x10), Color(0x00, 0x00, 0x00), Color(0x00, 0x00, 0x00), Color(0x10, 0x10, 0x10),
+                         Color(0x00, 0x00, 0x00), Color(0x18, 0x18, 0x18), Color(0x18, 0x18, 0x18)),
+    "White":            (Color(0xFF, 0xFF, 0xFF), Color(0xFF, 0xFF, 0xFF), Color(0xFF, 0xFF, 0xFF), Color(0xFF, 0xFF, 0xFF),
+                         Color(0xFF, 0xFF, 0xFF), Color(0xFF, 0xFF, 0xFF), Color(0xFF, 0xFF, 0xFF)),
+    "Magenta":          (Color(0xFF, 0x00, 0xFF), Color(0xFF, 0x00, 0xFF), Color(0xFF, 0x00, 0xFF), Color(0xFF, 0x00, 0xFF),
+                         Color(0xFF, 0x00, 0xFF), Color(0xFF, 0x00, 0xFF), Color(0xFF, 0x00, 0xFF)),
+    "Ruby":             (Color(0xFF, 0x00, 0x00), Color(0xFF, 0x00, 0x00), Color(0xFF, 0x00, 0x00), Color(0xFF, 0x00, 0x00),
+                         Color(0xFF, 0x00, 0x00), Color(0xFF, 0x00, 0x00), Color(0xFF, 0x00, 0x00)),
+    "Sapphire":         (Color(0x00, 0x00, 0xFF), Color(0x00, 0x00, 0xFF), Color(0x00, 0x00, 0xFF), Color(0x00, 0x00, 0xFF),
+                         Color(0x00, 0x00, 0xFF), Color(0x00, 0x00, 0xFF), Color(0x00, 0x00, 0xFF)),
+    "Lime":             (Color(0x00, 0xFF, 0x00), Color(0x00, 0xFF, 0x00), Color(0x00, 0xFF, 0x00), Color(0x00, 0xFF, 0x00),
+                         Color(0x00, 0xFF, 0x00), Color(0x00, 0xFF, 0x00), Color(0x00, 0xFF, 0x00)),
+    "Cyan":             (Color(0x00, 0xFF, 0xFF), Color(0x00, 0xFF, 0xFF), Color(0x00, 0xFF, 0xFF), Color(0x00, 0xFF, 0xFF),
+                         Color(0x00, 0xFF, 0xFF), Color(0x00, 0xFF, 0xFF), Color(0x00, 0xFF, 0xFF)),
+    "Purple":           (Color(0x80, 0x00, 0x80), Color(0x80, 0x00, 0x80), Color(0x80, 0x00, 0x80), Color(0x80, 0x00, 0x80),
+                         Color(0x80, 0x00, 0x80), Color(0x80, 0x00, 0x80), Color(0x80, 0x00, 0x80)),
+    "Orange":           (Color(0xFF, 0x80, 0x00), Color(0xFF, 0x80, 0x00), Color(0xFF, 0x80, 0x00), Color(0xFF, 0x80, 0x00),
+                         Color(0xFF, 0x80, 0x00), Color(0xFF, 0x80, 0x00), Color(0xFF, 0x80, 0x00)),
 }
 
+#                       B Button
 b_button_colors = {
+    "N64 Blue":         Color(0x5A, 0x5A, 0xFF),
     "N64 Green":        Color(0x00, 0x96, 0x00),
-    "GameCube Red":     Color(0xFF, 0x1E, 0x1E),
-}
-
-c_button_colors = {
-    "Default Yellow":   Color(0xFF, 0xA0, 0x00),
-}
-
-start_button_colors = {
     "N64 Red":          Color(0xC8, 0x00, 0x00),
+    "GameCube Green":   Color(0x00, 0xC8, 0x32),
+    "GameCube Red":     Color(0xFF, 0x1E, 0x1E),
     "GameCube Grey":    Color(0x78, 0x78, 0x78),
+    "Yellow":           Color(0xFF, 0xA0, 0x00),
+    "Black":            Color(0x10, 0x10, 0x10),
+    "White":            Color(0xFF, 0xFF, 0xFF),
+    "Magenta":          Color(0xFF, 0x00, 0xFF),
+    "Ruby":             Color(0xFF, 0x00, 0x00),
+    "Sapphire":         Color(0x00, 0x00, 0xFF),
+    "Lime":             Color(0x00, 0xFF, 0x00),
+    "Cyan":             Color(0x00, 0xFF, 0xFF),
+    "Purple":           Color(0x80, 0x00, 0x80),
+    "Orange":           Color(0xFF, 0x80, 0x00),
+}
+
+#                        C Button                 Pause Menu C Cursor      Pause Menu C Icon        C Note
+c_button_colors = {
+    "N64 Blue":         (Color(0x5A, 0x5A, 0xFF), Color(0x00, 0x32, 0xFF), Color(0x00, 0x64, 0xFF), Color(0x50, 0x96, 0xFF)),
+    "N64 Green":        (Color(0x00, 0x96, 0x00), Color(0x00, 0x96, 0x00), Color(0x00, 0x96, 0x00), Color(0x00, 0x96, 0x00)),
+    "N64 Red":          (Color(0xC8, 0x00, 0x00), Color(0xC8, 0x00, 0x00), Color(0xC8, 0x00, 0x00), Color(0xC8, 0x00, 0x00)),
+    "GameCube Green":   (Color(0x00, 0xC8, 0x32), Color(0x00, 0xFF, 0x32), Color(0x00, 0xFF, 0x64), Color(0x50, 0xFF, 0x96)),
+    "GameCube Red":     (Color(0xFF, 0x1E, 0x1E), Color(0xFF, 0x1E, 0x1E), Color(0xFF, 0x1E, 0x1E), Color(0xFF, 0x1E, 0x1E)),
+    "GameCube Grey":    (Color(0x78, 0x78, 0x78), Color(0x78, 0x78, 0x78), Color(0x78, 0x78, 0x78), Color(0x78, 0x78, 0x78)),
+    "Yellow":           (Color(0xFF, 0xA0, 0x00), Color(0xFF, 0xFF, 0x00), Color(0xFF, 0x96, 0x00), Color(0xFF, 0xFF, 0x32)),
+    "Black":            (Color(0x10, 0x10, 0x10), Color(0x00, 0x00, 0x00), Color(0x18, 0x18, 0x18), Color(0x18, 0x18, 0x18)),
+    "White":            (Color(0xFF, 0xFF, 0xFF), Color(0xFF, 0xFF, 0xFF), Color(0xFF, 0xFF, 0xFF), Color(0xFF, 0xFF, 0xFF)),
+    "Magenta":          (Color(0xFF, 0x00, 0xFF), Color(0xFF, 0x00, 0xFF), Color(0xFF, 0x00, 0xFF), Color(0xFF, 0x00, 0xFF)),
+    "Ruby":             (Color(0xFF, 0x00, 0x00), Color(0xFF, 0x00, 0x00), Color(0xFF, 0x00, 0x00), Color(0xFF, 0x00, 0x00)),
+    "Sapphire":         (Color(0x00, 0x00, 0xFF), Color(0x00, 0x00, 0xFF), Color(0x00, 0x00, 0xFF), Color(0x00, 0x00, 0xFF)),
+    "Lime":             (Color(0x00, 0xFF, 0x00), Color(0x00, 0xFF, 0x00), Color(0x00, 0xFF, 0x00), Color(0x00, 0xFF, 0x00)),
+    "Cyan":             (Color(0x00, 0xFF, 0xFF), Color(0x00, 0xFF, 0xFF), Color(0x00, 0xFF, 0xFF), Color(0x00, 0xFF, 0xFF)),
+    "Purple":           (Color(0x80, 0x00, 0x80), Color(0x80, 0x00, 0x80), Color(0x80, 0x00, 0x80), Color(0x80, 0x00, 0x80)),
+    "Orange":           (Color(0xFF, 0x80, 0x00), Color(0xFF, 0x80, 0x00), Color(0xFF, 0x80, 0x00), Color(0xFF, 0x80, 0x00)),
+}
+
+#                       Start Button
+start_button_colors = {
+    "N64 Blue":         Color(0x5A, 0x5A, 0xFF),
+    "N64 Green":        Color(0x00, 0x96, 0x00),
+    "N64 Red":          Color(0xC8, 0x00, 0x00),
+    "GameCube Green":   Color(0x00, 0xC8, 0x32),
+    "GameCube Red":     Color(0xFF, 0x1E, 0x1E),
+    "GameCube Grey":    Color(0x78, 0x78, 0x78),
+    "Yellow":           Color(0xFF, 0xA0, 0x00),
+    "Black":            Color(0x10, 0x10, 0x10),
+    "White":            Color(0xFF, 0xFF, 0xFF),
+    "Magenta":          Color(0xFF, 0x00, 0xFF),
+    "Ruby":             Color(0xFF, 0x00, 0x00),
+    "Sapphire":         Color(0x00, 0x00, 0xFF),
+    "Lime":             Color(0x00, 0xFF, 0x00),
+    "Cyan":             Color(0x00, 0xFF, 0xFF),
+    "Purple":           Color(0x80, 0x00, 0x80),
+    "Orange":           Color(0xFF, 0x80, 0x00),
 }
 
 meta_color_choices = ["Random Choice", "Completely Random", "Custom Color"]
@@ -242,6 +322,30 @@ def patch_music(rom, settings, log, symbols):
         music.restore_music(rom)
 
 
+def patch_model_colors(rom, color, model_addresses):
+    main_addresses, dark_addresses = model_addresses
+
+    for address in main_addresses:
+        rom.write_bytes(address, color)
+
+    darkened_color = list(map(lambda light: int(max((light - 0x32) * 0.6, 0)), color))
+    for address in dark_addresses:
+        rom.write_bytes(address, darkened_color)
+
+
+def patch_tunic_icon(rom, tunic, color):
+    # patch tunic icon colors
+    icon_locations = {
+        'Kokiri Tunic': 0x007FE000,
+        'Goron Tunic': 0x007FF000,
+        'Zora Tunic': 0x00800000,
+    }
+
+    tunic_icon = icon.generate_tunic_icon(color)
+
+    rom.write_bytes(icon_locations[tunic], tunic_icon)
+
+
 def patch_tunic_colors(rom, settings, log, symbols):
     # patch tunic colors
     tunics = [
@@ -265,7 +369,15 @@ def patch_tunic_colors(rom, settings, log, symbols):
         else:
             color = list(int(tunic_option[i:i+2], 16) for i in (0, 2 ,4))
             tunic_option = 'Custom'
+        # "Weird" weirdshots will crash if the Kokiri Tunic Green value is > 0x90. Brickwall it.
+        if settings.logic_rules != 'glitchless' and tunic == 'Kokiri Tunic':
+            color[1] = min(color[1],0x90)
         rom.write_bytes(address, color)
+
+        # patch the tunic icon
+        if [tunic, tunic_option] not in [['Kokiri Tunic', 'Kokiri Green'], ['Goron Tunic', 'Goron Red'], ['Zora Tunic', 'Zora Blue']]:
+            patch_tunic_icon(rom, tunic, color)
+
         log.tunic_colors[tunic] = dict(option=tunic_option, color=''.join(['{:02X}'.format(c) for c in color]))
 
 
@@ -402,12 +514,14 @@ def patch_sword_trails(rom, settings, log, symbols):
 def patch_gauntlet_colors(rom, settings, log, symbols):
     # patch gauntlet colors
     gauntlets = [
-        ('Silver Gauntlets', settings.silver_gauntlets_color, 0x00B6DA44),
-        ('Gold Gauntlets', settings.golden_gauntlets_color,  0x00B6DA47),
+        ('Silver Gauntlets', settings.silver_gauntlets_color, 0x00B6DA44,
+            ([0x173B4CC], [0x173B4D4, 0x173B50C, 0x173B514])), # GI Model DList colors
+        ('Gold Gauntlets', settings.golden_gauntlets_color,  0x00B6DA47,
+            ([0x173B4EC], [0x173B4F4, 0x173B52C, 0x173B534])), # GI Model DList colors
     ]
     gauntlet_color_list = get_gauntlet_colors()
 
-    for gauntlet, gauntlet_option, address in gauntlets:
+    for gauntlet, gauntlet_option, address, model_addresses in gauntlets:
         # handle random
         if gauntlet_option == 'Random Choice':
             gauntlet_option = random.choice(gauntlet_color_list)
@@ -422,16 +536,22 @@ def patch_gauntlet_colors(rom, settings, log, symbols):
             color = list(int(gauntlet_option[i:i+2], 16) for i in (0, 2 ,4))
             gauntlet_option = 'Custom'
         rom.write_bytes(address, color)
+        if settings.correct_model_colors:
+            patch_model_colors(rom, color, model_addresses)
         log.gauntlet_colors[gauntlet] = dict(option=gauntlet_option, color=''.join(['{:02X}'.format(c) for c in color]))
 
 
 def patch_heart_colors(rom, settings, log, symbols):
+    # patch heart colors
     hearts = [
-        ('Heart Colors', settings.heart_color, symbols['CFG_HEART_COLOR']),
+        ('Heart Colors', settings.heart_color, symbols['CFG_HEART_COLOR'], 0xBB0994,
+            ([0x14DA474, 0x14DA594, 0x14B701C, 0x14B70DC], 
+             [0x14B70FC, 0x14DA494, 0x14DA5B4, 0x14B700C, 0x14B702C, 0x14B703C, 0x14B704C, 0x14B705C, 
+              0x14B706C, 0x14B707C, 0x14B708C, 0x14B709C, 0x14B70AC, 0x14B70BC, 0x14B70CC])), # GI Model DList colors
     ]
     heart_color_list = get_heart_colors()
 
-    for heart, heart_option, symbol in hearts:
+    for heart, heart_option, symbol, file_select_address, model_addresses in hearts:
         # handle random
         if heart_option == 'Random Choice':
             heart_option = random.choice(heart_color_list)
@@ -445,17 +565,25 @@ def patch_heart_colors(rom, settings, log, symbols):
         else:
             color = list(int(heart_option[i:i+2], 16) for i in (0, 2, 4))
             heart_option = 'Custom'
-        rom.write_int16s(symbol, color)
+        rom.write_int16s(symbol, color) # symbol for ingame HUD
+        rom.write_int16s(file_select_address, color) # file select normal hearts
+        if heart_option != 'Red':
+            rom.write_int16s(file_select_address + 6, color) # file select DD hearts
+            if settings.correct_model_colors:
+                patch_model_colors(rom, color, model_addresses) # heart model colors
+                icon.patch_overworld_icon(rom, color, 0xF43D80) # Overworld Heart Icon
         log.heart_colors[heart] = dict(option=heart_option, color=''.join(['{:02X}'.format(c) for c in color]))
 
 
 def patch_magic_colors(rom, settings, log, symbols):
+    # patch magic colors
     magic = [
-        ('Magic Meter Color', settings.magic_color, symbols["CFG_MAGIC_COLOR"]),
+        ('Magic Meter Color', settings.magic_color, symbols["CFG_MAGIC_COLOR"],
+            ([0x154C654, 0x154CFB4], [0x154C65C, 0x154CFBC])), # GI Model DList colors
     ]
     magic_color_list = get_magic_colors()
 
-    for magic_color, magic_option, symbol in magic:
+    for magic_color, magic_option, symbol, model_addresses in magic:
         if magic_option == 'Random Choice':
            magic_option = random.choice(magic_color_list)
 
@@ -467,36 +595,83 @@ def patch_magic_colors(rom, settings, log, symbols):
             color = list(int(magic_option[i:i+2], 16) for i in (0, 2, 4))
             magic_option = 'Custom'
         rom.write_int16s(symbol, color)
+        if settings.correct_model_colors and magic_option != 'Green':
+            patch_model_colors(rom, color, model_addresses)
+            icon.patch_overworld_icon(rom, color, 0xF45650, data_path('icons/magicSmallExtras.raw')) # Overworld Small Pot
+            icon.patch_overworld_icon(rom, color, 0xF47650, data_path('icons/magicLargeExtras.raw')) # Overworld Big Pot
         log.magic_colors[magic_color] = dict(option=magic_option, color=''.join(['{:02X}'.format(c) for c in color]))
 
 
 def patch_button_colors(rom, settings, log, symbols):
     buttons = [
-        ('A Button Color', settings.a_button_color, a_button_colors, symbols['CFG_A_BUTTON_COLOR']),
-        ('B Button Color', settings.b_button_color, b_button_colors, symbols['CFG_B_BUTTON_COLOR']),
-        ('C Button Color', settings.c_button_color, c_button_colors, symbols['CFG_C_BUTTON_COLOR']),
-        ('Start Button Color', settings.start_button_color, start_button_colors, symbols['CFG_START_BUTTON_COLOR']),
+        ('A Button Color', settings.a_button_color, a_button_colors, 
+            [('A Button Color', symbols['CFG_A_BUTTON_COLOR'], 
+                None),
+             ('Text Cursor Color', symbols['CFG_TEXT_CURSOR_COLOR'], 
+                [(0xB88E81, 0xB88E85, 0xB88E9)]), # Initial Inner Color
+             ('Shop Cursor Color', symbols['CFG_SHOP_CURSOR_COLOR'], 
+                None),
+             ('Save/Death Cursor Color', None, 
+                [(0xBBEBC2, 0xBBEBC3, 0xBBEBD6), (0xBBEDDA, 0xBBEDDB, 0xBBEDDE)]), # Save Cursor / Death Cursor
+             ('Pause Menu A Cursor Color', None, 
+                [(0xBC7849, 0xBC784B, 0xBC784D), (0xBC78A9, 0xBC78AB, 0xBC78AD), (0xBC78BB, 0xBC78BD, 0xBC78BF)]), # Inner / Pulse 1 / Pulse 2
+             ('Pause Menu A Icon Color', None, 
+                [(0x845754, 0x845755, 0x845756)]),
+             ('A Note Color', symbols['CFG_A_NOTE_COLOR'], # For Textbox Song Display
+                [(0xBB299A, 0xBB299B, 0xBB299E), (0xBB2C8E, 0xBB2C8F, 0xBB2C92), (0xBB2F8A, 0xBB2F8B, 0xBB2F96)]), # Pause Menu Song Display
+            ]),
+        ('B Button Color', settings.b_button_color, b_button_colors, 
+            [('B Button Color', symbols['CFG_B_BUTTON_COLOR'], 
+                None),
+            ]),
+        ('C Button Color', settings.c_button_color, c_button_colors, 
+            [('C Button Color', symbols['CFG_C_BUTTON_COLOR'], 
+                None),
+             ('Pause Menu C Cursor Color', None, 
+                [(0xBC7843, 0xBC7845, 0xBC7847), (0xBC7891, 0xBC7893, 0xBC7895), (0xBC78A3, 0xBC78A5, 0xBC78A7)]), # Inner / Pulse 1 / Pulse 2
+             ('Pause Menu C Icon Color', None, 
+                [(0x8456FC, 0x8456FD, 0x8456FE)]),
+             ('C Note Color', symbols['CFG_C_NOTE_COLOR'], # For Textbox Song Display
+                [(0xBB2996, 0xBB2997, 0xBB29A2), (0xBB2C8A, 0xBB2C8B, 0xBB2C96), (0xBB2F86, 0xBB2F87, 0xBB2F9A)]), # Pause Menu Song Display
+            ]),
+        ('Start Button Color', settings.start_button_color, start_button_colors, 
+            [('Start Button Color', None, 
+                [(0xAE9EC6, 0xAE9EC7, 0xAE9EDA)]),
+            ]),
     ]
 
-    for button, button_option, button_colors, symbol in buttons:
+    for button, button_option, button_colors, patches in buttons:
+        color_set = None
         # handle random
         if button_option == 'Random Choice':
-            button_option = random.choice(button_colors.keys())
+            button_option = random.choice(list(button_colors.keys()))
         # handle completely random
         if button_option == 'Completely Random':
             color = [random.getrandbits(8), random.getrandbits(8), random.getrandbits(8)]
         # grab the color from the list
         elif button_option in button_colors:
-            color = list(button_colors[button_option])
+            color_set = [button_colors[button_option]] if isinstance(button_colors[button_option][0], int) else list(button_colors[button_option])
         # build color from hex code
         else:
             color = list(int(button_option[i:i+2], 16) for i in (0, 2, 4))
             button_option = 'Custom'
 
-        if button == 'Start Button Color':
-            rom.write_bytes(symbol, color)
-        else:
-            rom.write_int16s(symbol, color)
+        # apply all button color patches
+        i = 0
+        for patch, symbol, byte_addresses in patches:
+            if color_set != None:
+                color = color_set[i]
+
+            if symbol:
+                rom.write_int16s(symbol, color)
+
+            if byte_addresses:
+                for r_addr, g_addr, b_addr in byte_addresses:
+                    rom.write_byte(r_addr, color[0])
+                    rom.write_byte(g_addr, color[1])
+                    rom.write_byte(b_addr, color[2])
+
+            i += 1
 
         log.button_colors[button] = dict(option=button_option, color=''.join(['{:02X}'.format(c) for c in color]))
 
@@ -608,7 +783,7 @@ patch_sets = {
             "CFG_RAINBOW_SWORD_OUTER_ENABLED": 0x0012,
         }
     },
-    0x1F073FC8: {
+    0x1F073FC9: {
         "patches": [
             patch_dpad,
             patch_sword_trails,
@@ -622,10 +797,13 @@ patch_sets = {
             "CFG_A_BUTTON_COLOR": 0x0010,
             "CFG_B_BUTTON_COLOR": 0x0016,
             "CFG_C_BUTTON_COLOR": 0x001C,
-            "CFG_START_BUTTON_COLOR": 0x0022,
-            "CFG_DISPLAY_DPAD": 0x0025,
-            "CFG_RAINBOW_SWORD_INNER_ENABLED": 0x0026,
-            "CFG_RAINBOW_SWORD_OUTER_ENABLED": 0x0027,
+            "CFG_TEXT_CURSOR_COLOR": 0x0022,
+            "CFG_SHOP_CURSOR_COLOR": 0x0028,
+            "CFG_A_NOTE_COLOR": 0x002E,
+            "CFG_C_NOTE_COLOR": 0x0034,
+            "CFG_DISPLAY_DPAD": 0x003A,
+            "CFG_RAINBOW_SWORD_INNER_ENABLED": 0x003B,
+            "CFG_RAINBOW_SWORD_OUTER_ENABLED": 0x003C,
         }
     },
 }
