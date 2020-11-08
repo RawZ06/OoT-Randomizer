@@ -1,3 +1,5 @@
+from itertools import chain
+
 class Address():
     prev_address = None
 
@@ -217,6 +219,14 @@ class SaveContext():
         self.addresses['health_capacity'].value       = int(health) * 0x10
         self.addresses['health'].value                = int(health) * 0x10
         self.addresses['quest']['heart_pieces'].value = int((health % 1) * 4)
+
+
+    def give_raw_item(self, item):
+        if item.endswith(')'):
+            item_base, count = item[:-1].split(' (', 1)
+            if count.isdigit():
+                return self.give_item(item_base, count=int(count))
+        return self.give_item(item)
 
 
     def give_item(self, item, count=1):
@@ -765,7 +775,7 @@ class SaveContext():
         "Bottle with Fairy"        : 'fairy',
         "Bottle with Fish"         : 'fish',
         "Bottle with Milk"         : 'milk',
-        "Bottle with Letter"       : 'letter',
+        "Rutos Letter"             : 'letter',
         "Bottle with Blue Fire"    : 'blue_fire',
         "Bottle with Bugs"         : 'bug',
         "Bottle with Big Poe"      : 'big_poe',
@@ -833,7 +843,7 @@ class SaveContext():
         "Progressive Hookshot" : {'item_slot.hookshot'  : ['hookshot', 'longshot']},
         "Boomerang"      : {'item_slot.boomerang'       : 'boomerang'},
         "Lens of Truth"  : {'item_slot.lens'            : 'lens'},
-        "Hammer"         : {'item_slot.hammer'          : 'hammer'},
+        "Megaton Hammer"         : {'item_slot.hammer'          : 'hammer'},
         "Pocket Egg"     : {'item_slot.adult_trade'     : 'pocket_egg'},
         "Pocket Cucco"   : {'item_slot.adult_trade'     : 'pocket_cucco'},
         "Cojiro"         : {'item_slot.adult_trade'     : 'cojiro'},
@@ -846,6 +856,7 @@ class SaveContext():
         "Claim Check"    : {'item_slot.adult_trade'     : 'claim_check'},
         "Weird Egg"      : {'item_slot.child_trade'     : 'weird_egg'},
         "Chicken"        : {'item_slot.child_trade'     : 'chicken'},
+        "Zeldas Letter"  : {'item_slot.child_trade'     : 'zeldas_letter'},
         "Goron Tunic"    : {'equip_items.goron_tunic'   : True},
         "Zora Tunic"     : {'equip_items.zora_tunic'    : True},
         "Iron Boots"     : {'equip_items.iron_boots'    : True},
@@ -904,6 +915,7 @@ class SaveContext():
             'magic_level'           : None,
             'double_magic'          : [False, True],
         },
+        "Rupee"                     : {'rupees' : None},
         "Rupees"                    : {'rupees' : None},
         "Magic Bean Pack" : {
             'item_slot.beans'       : 'beans',
@@ -911,6 +923,9 @@ class SaveContext():
         },
         "Triforce Piece"            : {'triforce_pieces': None},
     }
+
+    giveable_items = set(chain(save_writes_table.keys(), bottle_types.keys(),
+        ["Piece of Heart", "Piece of Heart (Treasure Chest Game)", "Heart Container", "Rupee (1)"]))
 
 
     equipable_items = {
