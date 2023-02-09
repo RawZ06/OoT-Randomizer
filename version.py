@@ -8,10 +8,10 @@ supplementary_version = 1
 branch_identifier = 0x52
 
 # URL to your branch on GitHub.
-branch_url = 'https://github.com/Roman971/OoT-Randomizer/tree/Dev-R'
+branch_url = 'https://github.com/RawZ06/OoT-Randomizer/tree/Dev-R'
 
 # This is named __version__ at the top for compatability with older versions trying to version check.
 base_version = __version__
 
 # And finally, the completed version string. This is what is displayed and used for salting seeds.
-__version__ = f'{base_version} R-{supplementary_version}'
+__version__ = f'{base_version} RZ-{supplementary_version}'
