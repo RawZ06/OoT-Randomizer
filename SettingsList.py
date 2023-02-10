@@ -5055,9 +5055,6 @@ setting_infos = [
         ''',
         shared         = True,
     ),
-
-
-
     Combobox(
         name           = 'item_pool_value',
         gui_text       = 'Item Pool',
@@ -5091,8 +5088,37 @@ setting_infos = [
         ''',
         shared         = True,
         disable        = {
-            'ludicrous':  {'settings': ['one_item_per_dungeon']}
+            'ludicrous':  {'settings': ['one_item_per_dungeon']},
         }
+    ),
+    Combobox(
+        name           = 'item_pool_piece_of_heart',
+        gui_text       = 'Piece of Heart Item Pool',
+        default        = 'classic',
+        choices        = {
+            'classic': 'Classic',
+            'poh':     'Piece of Heart',
+            'hc':      'Heart Container',
+        },
+        gui_tooltip    = '''\
+            'Classic': There are 35 Pieces of Heart + (Treasure Chest Game) and 8 Heart Containers in the item pool like in the vanilla game.
+            
+            'Piece of Heart': There are only Piece of Heart and 0 Heart Containers in the item pool.
+            
+            'Heart Container': There are 3 Pieces of Heart + (Treasure Chest Game) and only Heart Containers in the item pool.
+        ''',
+        shared         = True
+    ),
+    Scale(
+        name='heart_count',
+        gui_text="Maximum Heart Count",
+        default=20,
+        min=3,
+        max=20,
+        gui_tooltip='''\
+           The maximum heart that can be obtained in the game.
+       ''',
+        shared=True,
     ),
     Combobox(
         name           = 'junk_ice_traps',

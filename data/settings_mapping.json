@@ -366,6 +366,8 @@
           "row_span": [1,1,1],
           "settings": [
             "item_pool_value",
+            "item_pool_piece_of_heart",
+            "heart_count",
             "junk_ice_traps",
             "ice_trap_appearance",
             "adult_trade_start"

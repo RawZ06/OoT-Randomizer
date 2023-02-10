@@ -4,9 +4,13 @@ This is a randomizer for _The Legend of Zelda: Ocarina of Time_ for the Nintendo
 
 **WARNING:** This branch is a modified version of the randomizer. It is **not** officially supported and may be **very unstable**.
 Please refrain from asking questions and from reporting issues in the main Randomizer Discord when using this branch.
-Instead, you can open an issue on this fork [here](https://github.com/Roman971/OoT-Randomizer/issues) or contact me directly on discord (Roman#7295) for any help, report or request.
+Instead, you can open an issue on this fork [here](https://github.com/RawZ06/OoT-Randomizer/issues) or contact me directly on discord (๖ۣۜℜสω乙 (RawZ06)#6037) for any help, report or request.
 
-Differences between this branch and the main Dev branch (on [Testrunner's Fork](https://github.com/TestRunnerSRL/OoT-Randomizer/tree/Dev)):
+Differences between this branch and [Dev-R](https://github.com/Roman971/OoT-Randomizer/tree/Dev-R) (on Roman's fork):
+* Customing number of hearts available on the seed
+* Add option to select type of heart in item pool (only PoH, only HC or classic). The item pool (minimal, scarce, balanced and plentiful) doesn't affect it.
+
+Differences between Dev-R and the main Dev branch (on [Testrunner's Fork](https://github.com/TestRunnerSRL/OoT-Randomizer/tree/Dev)):
 * Various GUI tweaks and improvements along with setting tooltip/option changes
 * 2 new advanced ER settings: "Mixed Entrance Pools" and "Decouple Entrances"
 * Picking up Gold Skulltula Tokens in non-Tokensanity displays a self-closing textbox which no longer freezes the player.

@@ -6,6 +6,8 @@ from Item import ItemFactory, ItemInfo
 from Location import DisableType, Location
 from Utils import random_choices
 
+import math
+
 
 # Generates item pools and places fixed items based on settings.
 
@@ -136,12 +138,8 @@ ludicrous_exclusions = [
 ]
 
 item_difficulty_max = {
-    'ludicrous': {
-        'Piece of Heart': 3,
-    },
-    'plentiful': {
-        'Piece of Heart': 3,
-    },
+    'ludicrous': {},
+    'plentiful': {},
     'balanced': {},
     'scarce': {
         'Bombchus': 3,
@@ -155,7 +153,6 @@ item_difficulty_max = {
         'Bow': 2,
         'Slingshot': 2,
         'Bomb Bag': 2,
-        'Heart Container': 0,
     },
     'minimal': {
         'Bombchus': 1,
@@ -170,9 +167,22 @@ item_difficulty_max = {
         'Bow': 1,
         'Slingshot': 1,
         'Bomb Bag': 1,
-        'Heart Container': 0,
-        'Piece of Heart': 0,
     },
+}
+
+item_difficulty_hearts = {
+    'classic': {
+        'Heart Container': 8,
+        'Piece of Heart': 35,
+    },
+    'poh': {
+        'Heart Container': 0,
+        'Piece of Heart': 67,
+    },
+    'hc': {
+        'Heart Container': 16,
+        'Piece of Heart': 3,
+    }
 }
 
 shopsanity_rupees = (
@@ -318,6 +328,52 @@ def replace_max_item(items, item, max_count):
             count += 1
 
 
+def get_number_of_heart_from_world(world):
+    starting_hearts = {
+        'Heart Container': 0,
+        'Piece of Heart': 0,
+    }
+
+    for item in world.settings.starting_items:
+        if item in starting_hearts:
+            starting_hearts[item] = int(world.settings.starting_items[item].to_json())
+
+    # Number of heart missing to reach max heart available on the seed
+    max_hearts = world.settings.heart_count - starting_hearts['Heart Container'] - (starting_hearts['Piece of Heart'] / 4) - 3
+
+    if max_hearts == 0:
+        return {
+            'Heart Container': 0,
+            'Piece of Heart': 0,
+        }
+    elif max_hearts < 0:
+        raise RuntimeError("Impossible to generate seed with less hearts than starting hearts.")
+
+    number_of_hc = item_difficulty_hearts[world.settings.item_pool_piece_of_heart]['Heart Container'] / 17 * max_hearts
+    number_of_poh = item_difficulty_hearts[world.settings.item_pool_piece_of_heart]['Piece of Heart'] / 17 * max_hearts
+
+    # If number of piece of heart is less than 3,
+    # we need to add 3 piece of heart to have a complete heart with piece of heart of treasure chest game
+    if number_of_poh < 3:
+        number_of_poh = 3
+        number_of_hc = number_of_hc - 1
+    else:
+        number_of_poh = math.ceil(number_of_poh / 4) * 4 - 1
+
+    if number_of_hc < 0:
+        number_of_hc = 0
+    else:
+        number_of_hc = math.floor(number_of_hc)
+
+    print("Number of heart container: " + str(number_of_hc))
+    print("Number of piece of heart: " + str(number_of_poh))
+
+    return {
+        'Heart Container': number_of_hc,
+        'Piece of Heart': number_of_poh
+    }
+
+
 def generate_itempool(world):
     junk_pool[:] = list(junk_pool_base)
     if world.settings.junk_ice_traps == 'on':
@@ -397,6 +453,11 @@ def get_pool_core(world):
 
     if world.settings.triforce_hunt:
         pending_junk_pool.extend(['Triforce Piece'] * world.settings.triforce_count_per_world)
+
+    # Add heart containers and pieces of heart to the junk pool.
+    number_of_heart = get_number_of_heart_from_world(world)
+    pending_junk_pool.extend(['Piece of Heart'] * number_of_heart['Piece of Heart'])
+    pending_junk_pool.extend(['Heart Container'] * number_of_heart['Heart Container'])
 
     # Use the vanilla items in the world's locations when appropriate.
     for location in world.get_locations():
@@ -769,5 +830,8 @@ def get_pool_core(world):
         world.distribution.distribution.search_groups['Junk'] = remove_junk_items
 
     world.distribution.collect_starters(world.state)
+
+    for item, maximum in number_of_heart.items():
+        replace_max_item(pool, item, maximum)
 
     return pool, placed_items
