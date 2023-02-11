@@ -29,6 +29,26 @@ defaultHintDists = [
 
 unHintableWothItems = ['Triforce Piece', 'Gold Skulltula Token']
 
+loving_words = [
+    '#love#',
+    '#romanticism#',
+    '#affection#',
+    '#tenderness#',
+    '#love at first sight#',
+    '#marriage#',
+    '#relationship#',
+]
+
+rupture_words = [
+    '#divorce#',
+    '#separation#',
+    '#breakup#',
+    '#end of relationship#',
+    '#ending love#',
+    '#heart break#',
+    '#heartache#',
+]
+
 class RegionRestriction(Enum):
     NONE = 0,
     DUNGEON = 1,
@@ -478,7 +498,9 @@ def get_woth_hint(spoiler, world, checked):
         world.woth_dungeon += 1
     location_text = hint_area.text(world.settings.clearer_hints)
 
-    return (GossipText('%s is on the way of the hero.' % location_text, ['Light Blue'], [location.name], [location.item.name]), [location])
+    loving_word = random.choice(loving_words)
+
+    return (GossipText('%s is on the way of the %s.' % (location_text, loving_word), ['Light Blue', 'Red'], [location.name], [location.item.name]), [location])
 
 def get_checked_areas(world, checked):
     def get_area_from_name(check):
@@ -675,7 +697,9 @@ def get_barren_hint(spoiler, world, checked, allChecked):
 
     checked.add(area)
 
-    return (GossipText("plundering %s is a foolish choice." % area.text(world.settings.clearer_hints), ['Pink']), None)
+    rupture_word = random.choice(rupture_words)
+
+    return (GossipText('%s is on the way of the %s.' % (area.text(world.settings.clearer_hints), rupture_word), ['Light Blue', 'Pink']), None)
 
 
 def is_not_checked(locations, checked):

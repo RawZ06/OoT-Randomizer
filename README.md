@@ -6,7 +6,10 @@ This is a randomizer for _The Legend of Zelda: Ocarina of Time_ for the Nintendo
 Please refrain from asking questions and from reporting issues in the main Randomizer Discord when using this branch.
 Instead, you can open an issue on this fork [here](https://github.com/RawZ06/OoT-Randomizer/issues) or contact me directly on discord (๖ۣۜℜสω乙 (RawZ06)#6037) for any help, report or request.
 
-Differences between this branch and [Dev-R](https://github.com/Roman971/OoT-Randomizer/tree/Dev-R) (on Roman's fork):
+Differences between this branch and [Dev-RZ](https://github.com/RawZ06/OoT-Randomizer/tree/Dev-RZ) (on Roman's fork):
+* Customing hints for valine day with lexical field of love
+
+Differences between Dev-R and [Dev-R](https://github.com/Roman971/OoT-Randomizer/tree/Dev-R) (on Roman's fork):
 * Customing number of hearts available on the seed
 * Add option to select type of heart in item pool (only PoH, only HC or classic). The item pool (minimal, scarce, balanced and plentiful) doesn't affect it.
 
