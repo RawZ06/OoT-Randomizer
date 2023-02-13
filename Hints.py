@@ -500,7 +500,7 @@ def get_woth_hint(spoiler, world, checked):
 
     loving_word = random.choice(loving_words)
 
-    return (GossipText('%s is path on of %s.' % (location_text, loving_word), ['Light Blue', 'Red'], [location.name], [location.item.name]), [location])
+    return (GossipText('%s is on path of %s.' % (location_text, loving_word), ['Light Blue', 'Red'], [location.name], [location.item.name]), [location])
 
 def get_checked_areas(world, checked):
     def get_area_from_name(check):
@@ -632,13 +632,13 @@ def get_goal_hint(spoiler, world, checked):
 
     location_text = HintArea.at(location).text(world.settings.clearer_hints)
     if world_id == world.id:
-        player_text = "the"
         goal_text = goal.hint_text
     else:
-        player_text = "Player %s's" % (world_id + 1)
         goal_text = spoiler.goal_categories[world_id][goal_category.name].get_goal(goal.name).hint_text
 
-    return (GossipText('%s is on %s %s.' % (location_text, player_text, goal_text), [goal.color, 'Light Blue'], [location.name], [location.item.name]), [location])
+    loving_word = random.choice(loving_words)
+
+    return (GossipText('%s is on path of %s.' % (location_text, loving_word), [goal.color, 'Light Blue'], [location.name], [location.item.name]), [location])
 
 
 def get_barren_hint(spoiler, world, checked, allChecked):
