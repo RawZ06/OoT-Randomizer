@@ -500,7 +500,7 @@ def get_woth_hint(spoiler, world, checked):
 
     loving_word = random.choice(loving_words)
 
-    return (GossipText('%s is on the way of the %s.' % (location_text, loving_word), ['Light Blue', 'Red'], [location.name], [location.item.name]), [location])
+    return (GossipText('%s is path on of %s.' % (location_text, loving_word), ['Light Blue', 'Red'], [location.name], [location.item.name]), [location])
 
 def get_checked_areas(world, checked):
     def get_area_from_name(check):
