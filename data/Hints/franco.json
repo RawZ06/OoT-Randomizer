@@ -18,8 +18,7 @@
         { "location": "GV Chest", "types": ["sometimes"] },
         { "location": "HC Great Fairy Reward", "types": ["sometimes"] },
         { "location": "OGC Great Fairy Reward", "types": ["sometimes"] },
-        { "location": "Gerudo Training Ground Maze Path Final Chest", "types": ["sometimes"] },
-        
+        { "location": "Gerudo Training Ground Maze Path Final Chest", "types": ["sometimes"] }
     ],
     "add_items":             [],
     "remove_items":          [
