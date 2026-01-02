@@ -444,30 +444,6 @@ remove_junk_ludicrous_items: list[str] = [
     'Biggoron Sword'
 ]
 
-remove_junk_barren_items: list[str] = [
-    'Ice Arrows',
-    'Deku Nut Capacity',
-    'Deku Stick Capacity',
-    'Double Defense',
-    'Biggoron Sword',
-    'Farores Wind',
-    "Goron Mask",
-    "Zora Mask",
-    "Gerudo Mask",
-    "Mask of Truth",
-    "Rupee (1)",
-    "Rupee (Treasure Chest Game) (1)",
-    "Rupees (Treasure Chest Game) (20)",
-    "Rupees (Treasure Chest Game) (5)"
-]
-
-removable_major_barren_items: list[str] = [
-    'Nayrus Love',
-    'Stone of Agony',
-    'Fire Arrows',
-    'Blue Fire Arrows'
-]
-
 # a useless placeholder item placed at some skipped and inaccessible locations
 # (e.g. HC Malon Egg with Skip Child Zelda, or the carpenters with Open Gerudo Fortress)
 IGNORE_LOCATION: str = 'Nothing'

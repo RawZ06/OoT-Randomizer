@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Optional
 
 from Hints import HintArea
 from Item import Item, ItemFactory, ItemInfo
-from ItemPool import item_groups, remove_junk_barren_items, removable_major_barren_items, remove_junk_items
+from ItemPool import item_groups, remove_junk_items
 from Location import Location, DisableType
 from LocationList import location_groups
 from Rules import set_shop_rules
@@ -39,7 +39,13 @@ def is_item_replaceable_barren(item: Item, settings) -> bool:
     Returns:
         bool: True if the item can be replaced, False otherwise
     """
+
+    # Shop: Never removed
     if item.type == 'Shop':
+        return False
+    
+    # Dungeon Reward: Removed only if it's a shuffle outside of the rewards.
+    if item.type == 'DungeonReward' and (settings.shuffle_dungeon_rewards == 'vanilla' or settings.shuffle_dungeon_rewards == 'reward'):
         return False
 
     # Songs: depends on shuffle_song_items setting
@@ -105,37 +111,34 @@ def reduce_placed_items_to_barren(worlds: list[World]) -> None:
         original_item = location.item
         is_replaced = False
 
-        # Case 1: Replace junk directly (without testing)
-        if original_item.name in item_groups['Junk']:
-            is_replaced = replace_junk_item_with_nothing(location, original_item, worlds)
+        # # Case 1: Replace junk directly (without testing)
+        # if original_item.name in item_groups['Junk']:
+        #     is_replaced = replace_junk_item_with_nothing(location, original_item)
 
-        # Case 2: Replace junk songs (Prelude and Serenade) (without testing)
-        elif original_item.name in item_groups['JunkSong']:
-            is_replaced = replace_junk_item_with_nothing(location, original_item, worlds)
+        # # Case 2: Replace junk songs (Prelude and Serenade) (without testing)
+        # elif original_item.name in item_groups['JunkSong']:
+        #     is_replaced = replace_junk_item_with_nothing(location, original_item)
 
-        # Case 3: Replace junk dungeon items (maps/compasses) (without testing)
-        elif original_item.name in item_groups['Map'] or original_item.name in item_groups['Compass']:
-            is_replaced = replace_junk_item_with_nothing(location, original_item, worlds)
+        # # Case 3: Replace junk dungeon items (maps/compasses) (without testing)
+        # elif original_item.name in item_groups['Map'] or original_item.name in item_groups['Compass']:
+        #     is_replaced = replace_junk_item_with_nothing(location, original_item)
 
-        # Case 4: Replace all health upgrades when the goal is not heart count (without testing)
-        elif original_item.name in item_groups['HealthUpgrade'] and item.world.settings.shuffle_ganon_bosskey != 'hearts' and item.world.settings.bridge != 'hearts':
-            is_replaced = replace_junk_item_with_nothing(location, original_item, worlds)
+        # # Case 4: Replace all health upgrades when the goal is not heart count (without testing)
+        # elif original_item.name in item_groups['HealthUpgrade'] and item.world.settings.shuffle_ganon_bosskey != 'hearts' and item.world.settings.bridge != 'hearts':
+        #     is_replaced = replace_junk_item_with_nothing(location, original_item)
 
-        # Case 5: Bottles can be removed in all locations reachable
-        elif original_item.name in item_groups['Bottle']:
-            is_replaced = replace_major_item_with_nothing(location, original_item, worlds)
-
-        # Case 6: Major items can be removed because they unlock no location
-        elif original_item.name in remove_junk_barren_items:
-            is_replaced = replace_major_item_with_nothing(location, original_item, worlds)
-
-        # Case 7: Major items can be replaced by other items to unlock locations
-        elif original_item.name in removable_major_barren_items:
-            is_replaced = replace_major_item_with_nothing(location, original_item, worlds)
-
-        # Default: Replace major items only when reachable_locations is 'beatable'
-        elif item.world.settings.reachable_locations == 'beatable':
-            is_replaced = replace_major_item_with_nothing(location, original_item, worlds)
+        # Default: Replace major items
+        if item.world.check_beatable_only:
+            if worlds[0].settings.reachable_locations == 'goals':
+                # If this item is required for a goal, it must be no removed.
+                # We also need to check to make sure the game is beatable, since custom goals might not imply that.
+                predicate = lambda state: state.won() and state.has_all_item_goals()
+            else:
+                # If the game is not beatable without this item, it can be removed.
+                predicate = State.won
+            is_replaced = replace_major_item_with_nothing_if_beatable(location, original_item, worlds, predicate)
+        else:
+            is_replaced = replace_major_item_with_nothing_if_all_location(all_locations, location, original_item, worlds)
 
         if is_replaced:
             replaced_count += 1
@@ -157,7 +160,7 @@ def reduce_placed_items_to_barren(worlds: list[World]) -> None:
         world.distribution.set_complete_itempool(placed_items)
         logger.info(f'Rebuilt item_pool for world {world.id}: {len(world.distribution.item_pool)} unique items')
 
-def replace_major_item_with_nothing(location: Location, original_item: Item | None, worlds: list[World]):
+def replace_major_item_with_nothing_if_beatable(location: Location, original_item: Item | None, worlds: list[World], predicate = State.won):
     # Temporarily replace with Nothing
     nothing_item = ItemFactory('Nothing', original_item.world)
     nothing_item.location = location
@@ -166,7 +169,7 @@ def replace_major_item_with_nothing(location: Location, original_item: Item | No
     # Test if the game is still beatable
     try:
         test_search = Search([w.state for w in worlds])
-        beatable = test_search.can_beat_game(scan_for_items=True)
+        beatable = test_search.can_beat_game(scan_for_items=True, predicate=predicate)
     except Exception as e:
         logger.warning(f'Error testing {original_item.name} at {location.name}: {e}')
         beatable = False
@@ -181,7 +184,43 @@ def replace_major_item_with_nothing(location: Location, original_item: Item | No
         location.item = original_item
         return False
 
-def replace_junk_item_with_nothing(location: Location, original_item: Item | None, worlds: list[World]):
+def replace_major_item_with_nothing_if_all_location(all_item_locations: list[Location], location: Location, original_item: Item | None, worlds: list[World]):
+    # Temporarily replace with Nothing
+    nothing_item = ItemFactory('Nothing', original_item.world)
+    nothing_item.location = location
+    location.item = nothing_item
+
+    # Test if all locations are still reachable
+    try:
+        test_search = Search([w.state for w in worlds])
+        test_search.collect_locations()
+
+        # Check if all locations are reachable using spot_access
+        # This works for ALL locations, not just progression items
+        unreachable_locations = []
+        for loc in all_item_locations:
+            if not test_search.spot_access(loc):
+                unreachable_locations.append(loc.name)
+
+        all_reachable = len(unreachable_locations) == 0
+
+        if not all_reachable:
+            logger.info(f'Unreachable locations without {original_item.name}: {unreachable_locations[:5]}...')
+    except Exception as e:
+        logger.warning(f'Error testing {original_item.name} at {location.name}: {e}')
+        all_reachable = False
+
+    if all_reachable:
+        # Keep the Nothing - all locations still reachable
+        logger.debug(f'Replaced {original_item.name} at {location.name} with Nothing (all locations reachable)')
+        return True
+    else:
+        # Restore original item - it's required to reach all locations
+        logger.debug(f'Cannot replace {original_item.name} at {location.name} with Nothing (some locations unreachable)')
+        location.item = original_item
+        return False
+
+def replace_junk_item_with_nothing(location: Location, original_item: Item | None):
     # Directly replace with Nothing
     nothing_item = ItemFactory('Nothing', original_item.world)
     nothing_item.location = location
