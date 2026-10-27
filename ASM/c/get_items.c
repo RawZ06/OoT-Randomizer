@@ -11,13 +11,15 @@
 #include "actor.h"
 #include "save.h"
 #include "models.h"
+#include "audio.h"
+#include "grotto.h"
 
 extern uint8_t SHUFFLE_CHEST_GAME;
 extern uint8_t FAST_CHESTS;
 extern uint8_t OCARINAS_SHUFFLED;
 extern uint8_t NO_COLLECTIBLE_HEARTS;
 extern uint32_t FREE_BOMBCHU_DROPS;
-override_t cfg_item_overrides[2200] = { 0 };
+override_t cfg_item_overrides[2900] = { 0 };
 int item_overrides_count = 0;
 
 z64_actor_t* dummy_actor = NULL;
@@ -31,7 +33,6 @@ extern uint8_t MW_SEND_OWN_ITEMS;
 extern override_key_t OUTGOING_KEY;
 extern uint16_t OUTGOING_ITEM;
 extern uint16_t OUTGOING_PLAYER;
-extern uint16_t GET_ITEM_SEQ_ID;
 xflag_t drop_collectible_override_flag; // Flag used by hacks in Item_DropCollectible to override the item being dropped. Set it to the flag for the overridden item.
 xflag_t* spawn_actor_with_flag = NULL;
 
@@ -54,14 +55,15 @@ const uint8_t REQUIRED_PENDING_FRAMES = 6;
 // xlflag_room_blob contains a compressed table of actor bit assignments for each scene/room/setup.
 // Call get_xflag_bit_offset to retrieve the desired offset for a flag.
 uint16_t xflag_scene_table[101];
-uint8_t xflag_room_table[700];
-uint8_t xflag_room_blob[3000];
-alt_override_t alt_overrides[200];
+uint8_t xflag_room_table[1500];
+uint8_t xflag_room_blob[3500];
+alt_override_t alt_overrides[550];
 
 extern uint16_t CURR_ACTOR_SPAWN_INDEX;
 
 // Total amount of memory required for each flag table (in bytes).
 uint16_t num_override_flags;
+uint16_t num_grotto_override_flags;
 
 // Pointer to a variable length array that will contain the collectible flags for each scene.
 uint8_t* collectible_override_flags;
@@ -78,7 +80,7 @@ void item_overrides_init() {
 
     // Create an actor satisfying the minimum requirements to give the player an item
     dummy_actor = heap_alloc(sizeof(z64_actor_t));
-    dummy_actor->main_proc = (void*)1;
+    dummy_actor->update = (void*)1;
 }
 
 override_key_t get_override_search_key_by_newflag(xflag_t* flag) {
@@ -556,7 +558,7 @@ uint8_t items[] = {
     GIVEITEM_RUPEE_PURPLE,
 };
 
-EnItem00* collectible_mutex = 0;
+void* collectible_mutex = 0;
 
 override_t collectible_override;
 
@@ -575,8 +577,8 @@ void Collectible_WaitForMessageBox(EnItem00* this, z64_game_t* game) {
     }
 
     // Check message state:
-    if (z64_MessageGetState(((uint8_t*)(&z64_game)) + 0x20D8) == 0) {
-        // Make sure Link was frozen for the minimum amount of time
+    if (Message_GetState(&z64_game.msgContext) == 0) {
+        // Make sure link was frozen for the minimum amount of time
         if (this->timeToLive == 0) {
             reset_collectible_mutex(); // release the mutex
             // Kill the actor
@@ -595,21 +597,22 @@ uint8_t room_flags[256]; // Stores the bit offset for each actor in the currentl
 // Determine the bit offset into the collectible_override_flags for a flag
 // Caches the bit offets for every actor in the current scene/room/setup into room_flags so that we don't have to search the table over and over.
 uint16_t get_xflag_bit_offset(xflag_t* flag) {
-    uint8_t i = 0;
+    int i = 0;
     uint8_t room_id_temp = 0;
     uint8_t room_id = 0;
     uint8_t setup_id_temp;
     uint8_t setup_id = 0;
     uint8_t room_setup_count = 0;
     uint16_t room_byte_offset = 0xFFFF;
-    bool is_grotto = flag->scene == 0x3E;
+    bool is_grotto = (flag->scene == 0x3E) || (flag->scene == 0x3C);
     //Index xflag_scene_table to get the offset into the room table for the current scene
     uint32_t test_scene_room_setup;
 
     // Check if we're in a grotto because we calculate grotto scene/room/setup differently because grottos are dumb
     if (is_grotto) {
         test_scene_room_setup = (flag->scene << 24) + (flag->grotto.grotto_id << 8) + (flag->grotto.room);
-    } else {
+    } 
+    else {
         test_scene_room_setup = (flag->scene << 24) + (flag->setup << 6) + (flag->room);
     }
 
@@ -631,13 +634,14 @@ uint16_t get_xflag_bit_offset(xflag_t* flag) {
         // Loop through all of the rooms/setups to find the one for this flag
         for (i = 0; i < room_setup_count; i++) {
             // Get the setup/room from the entry
-            if (flag->scene == 0x3E) {
-                // If we're in a the room/setup entries are stored differently because we need 2 bytes to represent them
+            if (is_grotto) {
+                // If we're in a grotto the room/setup entries are stored differently because we need 2 bytes to represent them
                 setup_id_temp = (xflag_room_table[room_table_index++]);
                 room_id_temp = xflag_room_table[room_table_index++];
                 room_id = flag->grotto.room;
                 setup_id = flag->grotto.grotto_id;
-            } else {
+            } 
+            else {
                 setup_id_temp = (xflag_room_table[room_table_index] & 0xC0) >> 6;
                 room_id_temp = xflag_room_table[room_table_index++] & 0x3F;
                 room_id = flag->room;
@@ -763,7 +767,7 @@ bool Item00_KillActorIfFlagIsSet(z64_actor_t* actor) {
         flag.scene = z64_game.scene_index;
         if (z64_game.scene_index == 0x3E) {
             flag.grotto.room = actor->room_index;
-            flag.grotto.grotto_id = z64_file.respawn[RESPAWN_MODE_RETURN].data & 0x1F;
+            flag.grotto.grotto_id = CURRENT_GROTTO_ID;
             flag.grotto.flag = CURR_ACTOR_SPAWN_INDEX;
             flag.grotto.subflag = 0;
         } else {
@@ -905,9 +909,50 @@ void dispatch_item(uint16_t resolved_item_id, uint8_t player, override_t* overri
     }
 }
 
-// Override hack for freestanding collectibles (rupees, recovery hearts, sticks, nuts, seeds, bombs, arrows, magic jars. Pieces of heart, heart containers, small keys handled by the regular get_item function)
-uint8_t item_give_collectible(uint8_t item, z64_link_t* link, z64_actor_t* from_actor) {
-    EnItem00* pItem = (EnItem00*)from_actor;
+void Item_DropCollectible_Random_Before(z64_game_t* globalCtx, z64_actor_t* fromActor, z64_xyzf_t* spawnPos, uint16_t params)
+{
+    if(fromActor)
+    {
+        xflag_t flag = Actor_GetAdditionalData(fromActor)->flag;;
+        //Handle certain actors separately individually
+        switch(fromActor->actor_id)
+        {
+            case 0x0033: //Dark Link
+            {
+                flag.all = 0;
+                flag.flag = 1;
+                flag.room = fromActor->room_index;
+                flag.scene = globalCtx->scene_index;
+                flag.setup = curr_scene_setup;
+                flag.subflag = 0;
+                break;
+            }
+            default:
+            {
+                break;
+            }
+        }
+        if(flag.all)
+        {
+            params = 0;
+            flag = resolve_alternative_flag(&flag);
+            override_t override = lookup_override_by_newflag(&flag);
+            if(override.key.all && !(Get_NewFlag(&flag)))
+            {
+                drop_collectible_override_flag = flag;
+                z64_SpawnActor(&globalCtx->actor_ctxt, globalCtx, 21, z64_link.common.pos_world.x, z64_link.common.pos_world.y, z64_link.common.pos_world.z, 0, 0, 0, 0);
+                z64_bzero(&drop_collectible_override_flag, sizeof(drop_collectible_override_flag));
+            }
+
+        }
+
+    }
+
+}
+
+// Override hack for freestanding collectibles (green, blue, red rupees, recovery hearts)
+uint8_t item_give_collectible(uint8_t item, z64_link_t *link, z64_actor_t *from_actor) {
+    EnItem00 *pItem = (EnItem00 *)from_actor;
 
     override_t override = pItem->override;
     xflag_t flag = Actor_GetAdditionalData(from_actor)->flag;
@@ -918,13 +963,18 @@ uint8_t item_give_collectible(uint8_t item, z64_link_t* link, z64_actor_t* from_
         return 0;
     }
 
-    if (!collectible_mutex && pItem->actor.main_proc != NULL) { // Check our mutex so that only one collectible can run at a time (if 2 run on the same frame you lose the message). Also make sure that this actor hasn't already been killed.
+    if (!collectible_mutex && pItem->actor.update != NULL) { // Check our mutex so that only one collectible can run at a time (if 2 run on the same frame you lose the message). Also make sure that this actor hasn't already been killed.
         collectible_mutex = (EnItem00*)from_actor;
         collectible_override = override;
         // resolve upgrades and figure out what item to give.
         uint16_t item_id = collectible_override.value.base.item_id;
         uint16_t resolved_item_id = resolve_upgrades(collectible_override);
         item_row_t* item_row = get_item_row(resolved_item_id);
+
+        // If we picked an ice trap, show the ice model instead of the fake item model.
+        if (item_id == GI_ICE_TRAP) {
+            pItem->model.graphic_id = 0xA4;
+        }
 
         // Set the collectible flag
         Set_NewFlag(&flag);
@@ -957,10 +1007,10 @@ uint8_t item_give_collectible(uint8_t item, z64_link_t* link, z64_actor_t* from_
                 pItem->actor.gravity = 0;
                 pItem->actionFunc = EnItem00_OutgoingAction; // Set our action function
                 sfxId = NA_SE_SY_FSEL_DECIDE_L; // Play a different sound effect for outgoing items. This is one from the file select screen.
-                z64_Audio_PlaySoundGeneral(sfxId, (void*)0x80104394, 4, (float*)0x801043A0, (float*)0x801043A0, (uint8_t*)0x801043A8);
+                SFX_PLAY_CENTERED(sfxId);
                 return 1;  // Return to the end of the Update function
             }
-            z64_Audio_PlaySoundGeneral(sfxId, (void*)0x80104394, 4, (float*)0x801043A0, (float*)0x801043A0, (uint8_t*)0x801043A8);
+            SFX_PLAY_CENTERED(sfxId);
             return 3; // Return to the original function so it can draw the collectible above our head.
         }
 
@@ -1002,7 +1052,7 @@ void get_skulltula_token(z64_actor_t* token_actor) {
     uint16_t resolved_item_id = resolve_upgrades(override);
     item_row_t* item_row = get_item_row(resolved_item_id);
 
-    token_actor->draw_proc = NULL;
+    token_actor->draw = NULL;
 
     PLAYER_NAME_ID = player;
     z64_DisplayTextbox(&z64_game, resolve_item_text_id(item_row, player != PLAYER_ID), 0);

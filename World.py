@@ -11,7 +11,7 @@ from typing import Any, Optional
 from Dungeon import Dungeon
 from Entrance import Entrance
 from Goals import Goal, GoalCategory
-from HintList import get_required_hints, misc_item_hint_table, misc_location_hint_table
+from HintList import get_required_hints, misc_item_hint_table, misc_location_hint_table, misc_dual_hint_table
 from Hints import HintArea, hint_dist_keys, hint_dist_files
 from Item import Item, ItemFactory, ItemInfo, make_event_item
 from ItemList import REWARD_COLORS
@@ -27,7 +27,7 @@ from SettingsList import SettingInfos, get_settings_from_section
 from Spoiler import Spoiler
 from State import State
 from Utils import data_path, read_logic_file
-
+from Boulders import BOULDER_TYPE
 
 class World:
     def __init__(self, world_id: int, settings: Settings, resolve_randomized_settings: bool = True) -> None:
@@ -56,7 +56,10 @@ class World:
         self.barren_dungeon: int = 0
         self.woth_dungeon: int = 0
         self.randomized_list: list[str] = []
+        self.randomized_starting_items: dict[str, int] = {}
         self.cached_bigocto_location: Optional[Location] = None
+        self.boulders: dict[str, BOULDER_TYPE]
+        self.boulders_by_id: dict[tuple(int,int,int,int), BOULDER_TYPE]
 
         self.parser: Rule_AST_Transformer = Rule_AST_Transformer(self)
         self.event_items: set[str] = set()
@@ -66,6 +69,9 @@ class World:
         # rename a few attributes...
         self.keysanity: bool = settings.shuffle_smallkeys in ('keysanity', 'remove', 'any_dungeon', 'overworld', 'regional')
         self.shuffle_silver_rupees = settings.shuffle_silver_rupees != 'vanilla'
+        self.shuffle_enemy_spawns = settings.shuffle_enemy_spawns != 'off'
+        #self.nnn = not(settings.nnn_opt_out)
+        self.nnn = False
         self.check_beatable_only: bool = settings.reachable_locations != 'all'
 
         self.shuffle_special_interior_entrances: bool = settings.shuffle_interior_entrances == 'all'
@@ -79,6 +85,20 @@ class World:
             or settings.shuffle_overworld_entrances or settings.shuffle_gerudo_valley_river_exit or settings.owl_drops or settings.warp_songs
             or settings.spawn_positions or (settings.shuffle_bosses != 'off')
         )
+
+        self.mix_entrance_pools: set[str] = {
+            pool
+            for pool in settings.mix_entrance_pools
+            if {
+                'Interior': self.shuffle_interior_entrances,
+                'GrottoGrave': settings.shuffle_grotto_entrances,
+                'Dungeon': self.shuffle_dungeon_entrances,
+                'Overworld': settings.shuffle_overworld_entrances,
+                'Boss': settings.shuffle_bosses == 'full',
+            }[pool]
+        }
+        if len(self.mix_entrance_pools) == 1:
+            self.mix_entrance_pools = set()
 
         self.mixed_pools_bosses = False # this setting is still in active development at https://github.com/Roman971/OoT-Randomizer
         # in these settings, there's not necessarily one dungeon reward in each main dungeon, so compasses and the pause menu switch to a different behavior
@@ -101,7 +121,9 @@ class World:
 
         if (settings.open_forest == 'closed'
             and (self.shuffle_special_interior_entrances or settings.shuffle_hideout_entrances or settings.shuffle_overworld_entrances
-                 or settings.warp_songs or settings.spawn_positions)):
+                 or settings.warp_songs or settings.spawn_positions  or settings.decouple_entrances or (len(settings.mix_entrance_pools) > 1)
+                 or (settings.logic_rules == 'advanced' and settings.shuffle_grotto_entrances)
+                 )):
             self.settings.open_forest = 'closed_deku'
 
         if settings.triforce_goal_per_world > settings.triforce_count_per_world:
@@ -155,8 +177,9 @@ class World:
             self.resolve_random_settings()
 
         self.song_notes: dict[str, Song] = generate_song_list(self,
-            frog=settings.ocarina_songs in ('frog', 'all'),
-            warp=settings.ocarina_songs in ('warp', 'all'),
+            frog='frog' in settings.ocarina_songs,
+            warp='warp' in settings.ocarina_songs,
+            frogs2='frogs2' in settings.ocarina_songs,
         )
 
         if len(settings.hint_dist_user) == 0:
@@ -238,10 +261,9 @@ class World:
 
         self.always_hints: list[str] = [hint.name for hint in get_required_hints(self)]
 
-        self.dungeon_rewards_hinted: bool = settings.shuffle_mapcompass != 'remove' if settings.enhance_map_compass else 'altar' in settings.misc_hints
+        self.dungeon_rewards_hinted: bool = settings.shuffle_mapcompass != 'remove' if 'compass_reward' in settings.enhance_map_compass else 'altar' in settings.misc_hints
         self.misc_hint_items: dict[str, str] = {hint_type: self.hint_dist_user.get('misc_hint_items', {}).get(hint_type, data['default_item']) for hint_type, data in misc_item_hint_table.items()}
         self.misc_hint_locations: dict[str, str] = {hint_type: self.hint_dist_user.get('misc_hint_locations', {}).get(hint_type, data['item_location']) for hint_type, data in misc_location_hint_table.items()}
-
         self.state: State = State(self)
 
         # Allows us to cut down on checking whether some items are required
@@ -254,6 +276,8 @@ class World:
         if self.settings.shuffle_ganon_bosskey == 'tokens':
             max_tokens = max(max_tokens, self.settings.ganon_bosskey_tokens)
         tokens = [50, 40, 30, 20, 10]
+        if self.settings.shuffle_100_skulltula_rupee:
+            tokens = [100, 50, 40, 30, 20, 10]
         for t in tokens:
             if f'Kak {t} Gold Skulltula Reward' not in self.settings.disabled_locations:
                 max_tokens = max(max_tokens, t)
@@ -358,6 +382,8 @@ class World:
         new_world.total_starting_triforce_count = self.total_starting_triforce_count
         new_world.maximum_wallets = self.maximum_wallets
         new_world.distribution = self.distribution
+        new_world.boulders = self.boulders
+        new_world.boulders_by_id = self.boulders_by_id
 
         new_world.dungeons = [dungeon for dungeon in self.dungeons]
         new_world.regions = [region for region in self.regions]
@@ -371,6 +397,7 @@ class World:
         new_world.randomized_list = list(self.randomized_list)
         for randomized_item in new_world.randomized_list:
             setattr(new_world, randomized_item, getattr(self.settings, randomized_item))
+        new_world.distribution.randomized_starting_items = new_world.randomized_starting_items = copy.copy(self.randomized_starting_items)
 
         new_world.always_hints = list(self.always_hints)
         new_world.max_progressions = copy.copy(self.max_progressions)
@@ -399,7 +426,6 @@ class World:
             dist_keys = self.distribution.distribution.src_dict['_settings'].keys()
         if self.settings.randomize_settings:
             setting_info = SettingInfos.setting_infos['randomize_settings']
-            self.randomized_list.extend(setting_info.disable[True]['settings'])
             for section in setting_info.disable[True]['sections']:
                 self.randomized_list.extend(get_settings_from_section(section))
                 # Remove settings specified in the distribution
@@ -560,6 +586,8 @@ class World:
         savewarps_to_connect = []
 
         for region in region_json:
+            if 'scene' not in region and 'dungeon' not in region:
+                print(region['region_name'])
             new_region = Region(self, region['region_name'])
             if 'scene' in region:
                 new_region.scene = region['scene']
@@ -574,8 +602,10 @@ class World:
             if 'time_passes' in region:
                 new_region.time_passes = region['time_passes']
                 new_region.provides_time = TimeOfDay.ALL
-            if new_region.name == 'Ganons Castle Grounds':
+            if new_region.name in ['Ganons Castle Grounds', 'Ganons Castle Ledge']:
                 new_region.provides_time = TimeOfDay.DAMPE
+            if 'provides_time' in region:
+                new_region.provides_time = getattr(TimeOfDay, region['provides_time'])
             if 'locations' in region:
                 for location, rule in region['locations'].items():
                     new_location = LocationFactory(location)
@@ -625,7 +655,7 @@ class World:
         savewarps_to_connect = []
         for hint_area in HintArea:
             if (name := hint_area.dungeon_name) is not None:
-                logic_folder = 'Glitched World' if self.settings.logic_rules == 'glitched' else 'World'
+                logic_folder = 'Glitched World' if self.settings.logic_rules == 'advanced' else 'World'
                 file_name = name + (' MQ.json' if self.dungeon_mq[name] else '.json')
                 savewarps_to_connect += self.load_regions_from_json(os.path.join(data_path(logic_folder), file_name))
                 self.dungeons.append(Dungeon(self, name, hint_area))
@@ -694,18 +724,18 @@ class World:
             for location in region.locations:
                 if location.type == 'Shop':
                     if location.name[-1:] in shop_item_indexes[:shop_item_count]:
-                        if self.settings.shopsanity_prices == 'random':
-                            self.shop_prices[location.name] = int(random.betavariate(1.5, 2) * 60) * 5
-                        elif self.settings.shopsanity_prices == 'random_starting':
-                            self.shop_prices[location.name] = random.randrange(0, 100, 5)
-                        elif self.settings.shopsanity_prices == 'random_adult':
-                            self.shop_prices[location.name] = random.randrange(0, 201, 5)
-                        elif self.settings.shopsanity_prices == 'random_giant':
-                            self.shop_prices[location.name] = random.randrange(0, 501, 5)
-                        elif self.settings.shopsanity_prices == 'random_tycoon':
-                            self.shop_prices[location.name] = random.randrange(0, 1000, 5)
-                        elif self.settings.shopsanity_prices == 'affordable':
-                            self.shop_prices[location.name] = 10
+                        if self.settings.special_deal_price_distribution == 'vanilla':
+                            self.shop_prices[location.name] = ItemInfo.items[location.vanilla_item].price
+                        elif self.settings.special_deal_price_max < self.settings.special_deal_price_min:
+                            raise ValueError('Maximum special deal price is lower than minimum, perhaps you meant to swap them?')
+                        elif self.settings.special_deal_price_max == self.settings.special_deal_price_min:
+                            self.shop_prices[location.name] = self.settings.special_deal_price_min
+                        elif self.settings.special_deal_price_distribution == 'betavariate':
+                            self.shop_prices[location.name] = self.settings.special_deal_price_min + int(random.betavariate(1.5, 2) * (self.settings.special_deal_price_max - self.settings.special_deal_price_min) / 5) * 5
+                        elif self.settings.special_deal_price_distribution == 'uniform':
+                            self.shop_prices[location.name] = random.randrange(self.settings.special_deal_price_min, self.settings.special_deal_price_max + 1, 5)
+                        else:
+                            raise NotImplementedError(f'Unimplemented special deal distribution: {self.settings.special_deal_price_distribution}')
 
     def set_scrub_prices(self) -> None:
         # Get Deku Scrub Locations
@@ -791,7 +821,7 @@ class World:
         # requesting X copies within the goal, so minimum goals has to
         # be 1 for these.
         dot = GoalCategory('door_of_time', 5, lock_entrances=['Temple of Time -> Beyond Door of Time'], minimum_goals=1)
-        b = GoalCategory('rainbow_bridge', 10, lock_entrances=['Ganons Castle Grounds -> Ganons Castle Lobby'])
+        b = GoalCategory('rainbow_bridge', 10, lock_entrances=['Ganons Castle Ledge -> Ganons Castle Lobby'])
         gbk = GoalCategory('ganon_bosskey', 20)
         trials = GoalCategory('trials', 30, minimum_goals=1)
         th = GoalCategory('triforce_hunt', 30, goal_count=round(self.settings.triforce_goal_per_world / 10), minimum_goals=1)
@@ -822,10 +852,10 @@ class World:
         if not self.settings.triforce_hunt:
             if self.settings.starting_age == 'child':
                 dot_items = [{'name': 'Temple of Time Access', 'quantity': 1, 'minimum': 1, 'hintable': True}]
-                if not self.settings.open_door_of_time:
+                if self.settings.open_door_of_time not in ('open', 'stones'):
                     dot_items.append({'name': 'Song of Time', 'quantity': 2 if self.settings.shuffle_song_items == 'any' and self.settings.item_pool_value == 'plentiful' else 1, 'minimum': 1, 'hintable': True})
                     if self.settings.shuffle_ocarinas:
-                        dot_items.append({'name': 'Ocarina', 'quantity': 3 if self.settings.item_pool_value == 'plentiful' else 2, 'minimum': 1, 'hintable': True})
+                        dot_items.append({'name': 'Ocarina', 'quantity': 3 if self.settings.item_pool_value == 'plentiful' else 2, 'minimum': 2 if self.settings.open_door_of_time in ('oot_sot', 'stones_oot_sot') else 1, 'hintable': True})
                     if self.settings.shuffle_individual_ocarina_notes:
                         notes = str(self.song_notes['Song of Time'])
                         if 'A' in notes:
@@ -839,6 +869,11 @@ class World:
                         if '^' in notes:
                             dot_items.append({'name': 'Ocarina C up Button', 'quantity': 2 if self.settings.item_pool_value == 'plentiful' else 1, 'minimum': 1, 'hintable': True})
                 dot.add_goal(Goal(self, 'Door of Time', 'path of #time#', 'Light Blue', items=dot_items))
+                if self.settings.open_door_of_time in ('stones', 'stones_sot', 'stones_oot_sot'):
+                    dot.add_goal(Goal(self, 'Kokiri Emerald', { 'replace': 'Kokiri Emerald' }, 'Green', items=[{'name': 'Kokiri Emerald', 'quantity': 1, 'minimum': 1, 'hintable': False}]))
+                    dot.add_goal(Goal(self, 'Goron Ruby', { 'replace': 'Goron Ruby' }, 'Red', items=[{'name': 'Goron Ruby', 'quantity': 1, 'minimum': 1, 'hintable': False}]))
+                    dot.add_goal(Goal(self, 'Zora Sapphire', { 'replace': 'Zora Sapphire' }, 'Blue', items=[{'name': 'Zora Sapphire', 'quantity': 1, 'minimum': 1, 'hintable': False}]))
+                    dot.minimum_goals = 3
                 self.goal_categories[dot.name] = dot
 
             # Bridge goals will always be defined as they have the most immediate priority
@@ -847,7 +882,8 @@ class World:
                 # dungeon boss holding the specified reward. Only boss names/paths
                 # are defined for this feature, and it is not extendable via plando.
                 # Goal hint text colors are based on the dungeon reward, not the boss.
-                if (self.settings.bridge_stones > 0 and self.settings.bridge == 'stones') or (self.settings.bridge_rewards > 0 and self.settings.bridge == 'dungeons'):
+                if (((self.settings.bridge_stones > 0 and self.settings.bridge == 'stones') or (self.settings.bridge_rewards > 0 and self.settings.bridge == 'dungeons'))
+                    and (self.settings.starting_age != 'child' or self.settings.open_door_of_time not in ('stones', 'stones_sot', 'stones_oot_sot'))):
                     b.add_goal(Goal(self, 'Kokiri Emerald', { 'replace': 'Kokiri Emerald' }, 'Green', items=[{'name': 'Kokiri Emerald', 'quantity': 1, 'minimum': 1, 'hintable': False}]))
                     b.add_goal(Goal(self, 'Goron Ruby', { 'replace': 'Goron Ruby' }, 'Red', items=[{'name': 'Goron Ruby', 'quantity': 1, 'minimum': 1, 'hintable': False}]))
                     b.add_goal(Goal(self, 'Zora Sapphire', { 'replace': 'Zora Sapphire' }, 'Blue', items=[{'name': 'Zora Sapphire', 'quantity': 1, 'minimum': 1, 'hintable': False}]))
@@ -911,24 +947,26 @@ class World:
             # locations to hint. If duplicate goals are defined for Bridge and
             # all of these goals are accessible without Ganon's Castle access,
             # the GBK category is redundant and not used for hint selection.
-            if ((self.settings.ganon_bosskey_stones > 0
-                    and self.settings.shuffle_ganon_bosskey == 'stones'
-                    and (self.shuffle_special_dungeon_entrances or self.settings.shuffle_ganon_tower or self.settings.ganon_bosskey_stones > self.settings.bridge_stones or self.settings.bridge != 'stones'))
-                or (self.settings.lacs_stones > 0
-                    and self.settings.shuffle_ganon_bosskey == 'on_lacs' and self.settings.lacs_condition == 'stones'
-                    and (self.shuffle_special_dungeon_entrances or self.settings.shuffle_ganon_tower or self.settings.lacs_stones > self.settings.bridge_stones or self.settings.bridge != 'stones'))
-                or (self.settings.ganon_bosskey_rewards > 0
-                    and self.settings.shuffle_ganon_bosskey == 'dungeons'
-                    and (self.shuffle_special_dungeon_entrances or self.settings.shuffle_ganon_tower or self.settings.ganon_bosskey_rewards > self.settings.bridge_medallions or self.settings.bridge != 'medallions')
-                    and (self.shuffle_special_dungeon_entrances or self.settings.shuffle_ganon_tower or self.settings.ganon_bosskey_rewards > self.settings.bridge_stones or self.settings.bridge != 'stones')
-                    and (self.shuffle_special_dungeon_entrances or self.settings.shuffle_ganon_tower or self.settings.ganon_bosskey_rewards > self.settings.bridge_rewards or self.settings.bridge != 'dungeons')
-                    and (self.shuffle_special_dungeon_entrances or self.settings.shuffle_ganon_tower or self.settings.ganon_bosskey_rewards > 2 or self.settings.bridge != 'vanilla'))
-                or (self.settings.lacs_rewards > 0
-                    and self.settings.shuffle_ganon_bosskey == 'on_lacs' and self.settings.lacs_condition == 'dungeons'
-                    and (self.shuffle_special_dungeon_entrances or self.settings.shuffle_ganon_tower or self.settings.lacs_rewards > self.settings.bridge_medallions or self.settings.bridge != 'medallions')
-                    and (self.shuffle_special_dungeon_entrances or self.settings.shuffle_ganon_tower or self.settings.lacs_rewards > self.settings.bridge_stones or self.settings.bridge != 'stones')
-                    and (self.shuffle_special_dungeon_entrances or self.settings.shuffle_ganon_tower or self.settings.lacs_rewards > self.settings.bridge_rewards or self.settings.bridge != 'dungeons')
-                    and (self.shuffle_special_dungeon_entrances or self.settings.shuffle_ganon_tower or self.settings.lacs_rewards > 2 or self.settings.bridge != 'vanilla'))):
+            if ((self.settings.starting_age != 'child' or self.settings.open_door_of_time not in ('stones', 'stones_sot', 'stones_oot_sot'))
+                and (
+                    (self.settings.ganon_bosskey_stones > 0
+                        and self.settings.shuffle_ganon_bosskey == 'stones'
+                        and (self.shuffle_special_dungeon_entrances or self.settings.shuffle_ganon_tower or self.settings.ganon_bosskey_stones > self.settings.bridge_stones or self.settings.bridge != 'stones'))
+                    or (self.settings.lacs_stones > 0
+                        and self.settings.shuffle_ganon_bosskey == 'on_lacs' and self.settings.lacs_condition == 'stones'
+                        and (self.shuffle_special_dungeon_entrances or self.settings.shuffle_ganon_tower or self.settings.lacs_stones > self.settings.bridge_stones or self.settings.bridge != 'stones'))
+                    or (self.settings.ganon_bosskey_rewards > 0
+                        and self.settings.shuffle_ganon_bosskey == 'dungeons'
+                        and (self.shuffle_special_dungeon_entrances or self.settings.shuffle_ganon_tower or self.settings.ganon_bosskey_rewards > self.settings.bridge_medallions or self.settings.bridge != 'medallions')
+                        and (self.shuffle_special_dungeon_entrances or self.settings.shuffle_ganon_tower or self.settings.ganon_bosskey_rewards > self.settings.bridge_stones or self.settings.bridge != 'stones')
+                        and (self.shuffle_special_dungeon_entrances or self.settings.shuffle_ganon_tower or self.settings.ganon_bosskey_rewards > self.settings.bridge_rewards or self.settings.bridge != 'dungeons')
+                        and (self.shuffle_special_dungeon_entrances or self.settings.shuffle_ganon_tower or self.settings.ganon_bosskey_rewards > 2 or self.settings.bridge != 'vanilla'))
+                    or (self.settings.lacs_rewards > 0
+                        and self.settings.shuffle_ganon_bosskey == 'on_lacs' and self.settings.lacs_condition == 'dungeons'
+                        and (self.shuffle_special_dungeon_entrances or self.settings.shuffle_ganon_tower or self.settings.lacs_rewards > self.settings.bridge_medallions or self.settings.bridge != 'medallions')
+                        and (self.shuffle_special_dungeon_entrances or self.settings.shuffle_ganon_tower or self.settings.lacs_rewards > self.settings.bridge_stones or self.settings.bridge != 'stones')
+                        and (self.shuffle_special_dungeon_entrances or self.settings.shuffle_ganon_tower or self.settings.lacs_rewards > self.settings.bridge_rewards or self.settings.bridge != 'dungeons')
+                        and (self.shuffle_special_dungeon_entrances or self.settings.shuffle_ganon_tower or self.settings.lacs_rewards > 2 or self.settings.bridge != 'vanilla')))):
                 gbk.add_goal(Goal(self, 'Kokiri Emerald', { 'replace': 'Kokiri Emerald' }, 'Green', items=[{'name': 'Kokiri Emerald', 'quantity': 1, 'minimum': 1, 'hintable': False}]))
                 gbk.add_goal(Goal(self, 'Goron Ruby', { 'replace': 'Goron Ruby' }, 'Red', items=[{'name': 'Goron Ruby', 'quantity': 1, 'minimum': 1, 'hintable': False}]))
                 gbk.add_goal(Goal(self, 'Zora Sapphire', { 'replace': 'Zora Sapphire' }, 'Blue', items=[{'name': 'Zora Sapphire', 'quantity': 1, 'minimum': 1, 'hintable': False}]))
@@ -1023,32 +1061,39 @@ class World:
 
             # To avoid too many goals in the hint selection phase,
             # trials are reduced to one goal with six items to obtain.
-            if not self.skipped_trials['Forest']:
-                trial_goal.items.append({'name': 'Forest Trial Clear', 'quantity': 1, 'minimum': 1, 'hintable': True})
-                trials.goal_count += 1
-            if not self.skipped_trials['Fire']:
-                trial_goal.items.append({'name': 'Fire Trial Clear', 'quantity': 1, 'minimum': 1, 'hintable': True})
-                trials.goal_count += 1
-            if not self.skipped_trials['Water']:
-                trial_goal.items.append({'name': 'Water Trial Clear', 'quantity': 1, 'minimum': 1, 'hintable': True})
-                trials.goal_count += 1
-            if not self.skipped_trials['Shadow']:
-                trial_goal.items.append({'name': 'Shadow Trial Clear', 'quantity': 1, 'minimum': 1, 'hintable': True})
-                trials.goal_count += 1
-            if not self.skipped_trials['Spirit']:
-                trial_goal.items.append({'name': 'Spirit Trial Clear', 'quantity': 1, 'minimum': 1, 'hintable': True})
-                trials.goal_count += 1
-            if not self.skipped_trials['Light']:
-                trial_goal.items.append({'name': 'Light Trial Clear', 'quantity': 1, 'minimum': 1, 'hintable': True})
+            if self.settings.shuffle_ganon_tower:
+                trial_goal.items.append({'name': 'Ganons Tower Access', 'quantity': 1, 'minimum': 1, 'hintable': True})
                 trials.goal_count += 1
 
-            # Trials category is finalized and saved only if at least one trial is on
-            # If random trials are on and one world in multiworld gets 0 trials, still
-            # add the goal to prevent key errors. Since no items fulfill the goal, it
-            # will always be invalid for that world and not generate hints.
-            if self.settings.trials > 0 or self.settings.trials_random:
                 trials.add_goal(trial_goal)
                 self.goal_categories[trials.name] = trials
+            else:
+                if not self.skipped_trials['Forest']:
+                    trial_goal.items.append({'name': 'Forest Trial Clear', 'quantity': 1, 'minimum': 1, 'hintable': True})
+                    trials.goal_count += 1
+                if not self.skipped_trials['Fire']:
+                    trial_goal.items.append({'name': 'Fire Trial Clear', 'quantity': 1, 'minimum': 1, 'hintable': True})
+                    trials.goal_count += 1
+                if not self.skipped_trials['Water']:
+                    trial_goal.items.append({'name': 'Water Trial Clear', 'quantity': 1, 'minimum': 1, 'hintable': True})
+                    trials.goal_count += 1
+                if not self.skipped_trials['Shadow']:
+                    trial_goal.items.append({'name': 'Shadow Trial Clear', 'quantity': 1, 'minimum': 1, 'hintable': True})
+                    trials.goal_count += 1
+                if not self.skipped_trials['Spirit']:
+                    trial_goal.items.append({'name': 'Spirit Trial Clear', 'quantity': 1, 'minimum': 1, 'hintable': True})
+                    trials.goal_count += 1
+                if not self.skipped_trials['Light']:
+                    trial_goal.items.append({'name': 'Light Trial Clear', 'quantity': 1, 'minimum': 1, 'hintable': True})
+                    trials.goal_count += 1
+
+                # Trials category is finalized and saved only if at least one trial is on
+                # If random trials are on and one world in multiworld gets 0 trials, still
+                # add the goal to prevent key errors. Since no items fulfill the goal, it
+                # will always be invalid for that world and not generate hints.
+                if self.settings.trials > 0 or self.settings.trials_random:
+                    trials.add_goal(trial_goal)
+                    self.goal_categories[trials.name] = trials
 
             # In glitched logic or if trials are off, it's possible that some items required to beat the game
             # (such as bow, magic, light arrows, or anything required to reach Ganon's Castle)
@@ -1126,7 +1171,7 @@ class World:
         if self.cached_bigocto_location is not None:
             return self.cached_bigocto_location
         # Find an item location behind the Jabu boss door by searching regions breadth-first without going back into Jabu proper
-        if self.settings.logic_rules == 'glitched':
+        if self.settings.logic_rules == 'advanced':
             location = self.get_location('Barinade')
         else:
             jabu_reward_regions = {self.get_entrance('Jabu Jabus Belly Before Boss -> Barinade Boss Room').connected_region}
@@ -1198,8 +1243,8 @@ class World:
 
         logging.getLogger('').debug('Placed %s [World %d] at %s [World %d]', item, item.world.id if hasattr(item, 'world') else -1, location, location.world.id if hasattr(location, 'world') else -1)
 
-    def get_locations(self) -> list[Location]:
-        if not self._cached_locations:
+    def get_locations(self, use_cache=True) -> list[Location]:
+        if not (use_cache and self._cached_locations):
             for region in self.regions:
                 self._cached_locations.extend(region.locations)
         return self._cached_locations
@@ -1316,24 +1361,26 @@ class World:
             self.settings.shuffle_scrubs == 'off' and not self.settings.shuffle_grotto_entrances):
             # nayru's love may be required to prevent forced damage
             exclude_item_list.append('Nayrus Love')
-        if ('logic_grottos_without_agony' in self.settings.allowed_tricks or self.settings.logic_rules != 'glitchless') and self.settings.hints != 'agony':
+        if ('logic_grottos_without_agony' in self.settings.allowed_tricks) and self.settings.hints != 'agony':
             # Stone of Agony skippable if not used for hints or grottos
             exclude_item_list.append('Stone of Agony')
         if not self.shuffle_special_interior_entrances and not self.settings.shuffle_overworld_entrances and not self.settings.warp_songs:
             # Serenade and Prelude are never required unless one of those settings is enabled
             exclude_item_list.append('Serenade of Water')
             exclude_item_list.append('Prelude of Light')
-        if self.settings.logic_rules == 'glitchless':
-            # Both two-handed swords can be required in glitch logic, so only consider them foolish in glitchless
+        if self.settings.logic_rules == 'glitchless' and not self.settings.shuffle_enemy_drops:
+            # Biggoron Sword can only be required in glitched logic or shuffled enemy drops
             exclude_item_list.append('Biggoron Sword')
+        if self.settings.logic_rules == 'glitchless':
+            # Giant's Knife cannot currently be required in any logic, but it was requested that it not be foolish in glitched or no logic.
             exclude_item_list.append('Giants Knife')
         if self.settings.plant_beans:
             # Magic Beans are useless if beans are already planted
             exclude_item_list.append('Magic Bean')
             exclude_item_list.append('Buy Magic Bean')
             exclude_item_list.append('Magic Bean Pack')
-        if not self.settings.blue_fire_arrows:
-            # Ice Arrows can only be required when the Blue Fire Arrows setting is enabled
+        if not (self.settings.blue_fire_arrows or self.settings.shuffle_enemy_drops):
+            # Ice Arrows can only be required when the Blue Fire Arrows setting is enabled or Enemy Drops are shuffled.
             exclude_item_list.append('Ice Arrows')
         if 'logic_lens_botw' in self.settings.allowed_tricks or self.settings.shuffle_pots in ('off', 'overworld'):
             # These silver rupees unlock a door to an area that's also reachable with lens
@@ -1444,6 +1491,9 @@ class World:
                     # The max number of requred Big Poe Bottles is based on the setting
                     dupe_locations = duplicate_item_woth[world_id].get(item.name, [])
                     max_progressive = self.settings.big_poe_count
+                elif item.name == 'Ocarina':
+                    dupe_locations = duplicate_item_woth[world_id].get(item.name, [])
+                    max_progressive = 2 if self.settings.open_door_of_time in ('oot_sot', 'stones_oot_sot') else 1
                 elif item.name == 'Progressive Wallet':
                     dupe_locations = duplicate_item_woth[world_id].get(item.name, [])
                     max_progressive = self.maximum_wallets

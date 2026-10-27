@@ -126,8 +126,8 @@ class Sounds(Enum):
     PLANT_EXPLODE      = Sound(0x284E, 'plant-explode',         'Plant Explode',             [])
     POE                = Sound(0x38EC, 'poe',                   'Poe',                       [Tags.PAINFUL, Tags.NAVI])
     POT_SHATTER        = Sound(0x2887, 'shattering-pot',        'Pot Shattering',            [Tags.NAVI, Tags.HPLOW])
-    REDEAD_MOAN        = Sound(0x38E4, 'redead-moan',           'Redead Moan',               [Tags.NIGHTFALL])
-    REDEAD_SCREAM      = Sound(0x38E5, 'redead-scream',         'Redead Scream',             [Tags.PAINFUL, Tags.NAVI, Tags.HORSE])
+    REDEAD_MOAN        = Sound(0x38E4, 'redead-moan',           'ReDead Moan',               [Tags.NIGHTFALL])
+    REDEAD_SCREAM      = Sound(0x38E5, 'redead-scream',         'ReDead Scream',             [Tags.PAINFUL, Tags.NAVI, Tags.HORSE])
     RIBBIT             = Sound(0x28B1, 'ribbit',                'Ribbit',                    [Tags.NAVI, Tags.HPLOW])
     RUPEE              = Sound(0x4803, 'rupee',                 'Rupee',                     [])
     RUPEE_SILVER       = Sound(0x28E8, 'silver-rupee',          'Rupee (Silver)',            [Tags.HPLOW])
@@ -257,7 +257,8 @@ def get_voice_sfx_choices(age: int, include_random: bool = True) -> list[str]:
     names = ['Default', 'Silent']
     voices_path = os.path.join(data_path('Voices'), ('Child' if age == 0 else 'Adult'))
     if os.path.isdir(voices_path):
-        names += [f for f in os.listdir(voices_path) if os.path.isdir(os.path.join(voices_path, f))]
+        # Look for .pak files first
+        names += [f for f in os.listdir(voices_path) if os.path.isdir(os.path.join(voices_path, f)) or f.endswith(".pak")]
 
     # Add a random if multiple options are available
     if len(names) > 2 and include_random:

@@ -171,7 +171,7 @@ _Bool should_draw_forest_hallway_chest(z64_actor_t* actor, z64_game_t* game) {
 
     // Vanilla code
     return (box_obj_idx(actor) > 0)
-        && ((box_obj_idx(actor) = z64_ObjectIndex(&game->obj_ctxt, OBJECT_BOX)) > 0)
+        && ((box_obj_idx(actor) = Object_GetIndex(&game->obj_ctxt, OBJECT_BOX)) > 0)
         && z64_ObjectIsLoaded(&game->obj_ctxt, box_obj_idx(actor));
 }
 
@@ -180,6 +180,8 @@ void get_dummy_chest(Chest* dummy_chest) {
     dummy_actor.actor_id = 0x000A;
     dummy_actor.variable = 0x27EE;
     dummy_chest->en_box.dyna.actor = dummy_actor;
+    // Init the type at gold, this way it will keep its vanilla appearance if we do not override it later in get_chest_override.
+    dummy_chest->en_box.type = GOLD_CHEST;
 }
 
 void draw_forest_hallway_chest_base() {

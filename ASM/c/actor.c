@@ -1,3 +1,5 @@
+#include "actor.h"
+#include "get_items.h"
 #include "z64.h"
 #include "pots.h"
 #include "item_table.h"
@@ -5,11 +7,19 @@
 #include "obj_kibako.h"
 #include "obj_kibako2.h"
 #include "obj_comb.h"
+#include "en_kusa.h"
 #include "textures.h"
+#include "en_bb.h"
 #include "actor.h"
 #include "en_wonderitem.h"
 #include "scene.h"
 #include "en_item00.h"
+#include "item_table.h"
+#include "enemy_spawn_shuffle.h"
+#include "minimap.h"
+#include "bg_mori_bigst.h"
+#include "entrances.h"
+#include "grotto.h"
 
 extern uint8_t POTCRATE_TEXTURES_MATCH_CONTENTS;
 extern uint16_t CURR_ACTOR_SPAWN_INDEX;
@@ -28,6 +38,17 @@ extern xflag_t* spawn_actor_with_flag;
 #define OBJ_KIBAKO2         0x1A0   // Large Crate
 #define EN_G_SWITCH         0x0117 //Silver Rupee
 #define EN_WONDER_ITEM      0x0112  // Wonder Item
+#define EN_ANUBICE_TAG      0x00F6  // Anubis Spawner
+#define EN_IK               0x0113  // Iron Knuckes
+#define EN_SW               0x0095  // Skullwalltula
+#define EN_BB               0x0069  // Bubble
+#define EN_KUSA             0x0125 // Grass/Bush
+#define OBJ_MURE2           0x0151 // Obj_Mure2 - Bush/Rock circles
+#define ACTOR_FISHING       0xFE // Fishing fish
+#define EN_GS               0x1B9   // Gossip Stone
+
+uint8_t actor_spawn_as_child_flag = 0;
+z64_actor_t* actor_spawn_as_child_parent = NULL;
 
 // Get a pointer to the additional data that is stored at the beginning of every actor
 // This is calculated as the actor's address + the actor instance size from the overlay table.
@@ -39,17 +60,22 @@ ActorAdditionalData* Actor_GetAdditionalData(z64_actor_t* actor) {
 // Store the flag using the pointer
 void Actor_BuildFlag(z64_actor_t* actor, xflag_t* flag, uint16_t actor_index, uint8_t subflag) {
     flag->scene = z64_game.scene_index;
-    if (z64_game.scene_index == 0x3E) {
+    if ((z64_game.scene_index == 0x3E) || (z64_game.scene_index == 0x3C)) {
+        // Grottos
         flag->grotto.room = actor->room_index;
-        flag->grotto.grotto_id = z64_file.respawn[RESPAWN_MODE_RETURN].data & 0x1F;
+        flag->grotto.grotto_id = CURRENT_GROTTO_ID;
         flag->grotto.flag = actor_index;
         flag->grotto.subflag = subflag;
-    } else {
+    }
+    else {
         flag->room = actor->room_index;
         flag->setup = curr_scene_setup;
         flag->flag = actor_index;
         flag->subflag = subflag;
     }
+}
+void* Actor_ResolveOverlayAddr(z64_actor_t* actor, void* addr) {
+    return (addr - actor->overlay_entry->vramStart + actor->overlay_entry->loadedRamAddr);
 }
 
 // Called from Actor_UpdateAll when spawning the actors in the scene's/room's actor list to store flags in the new space that we added to the actors.
@@ -61,6 +87,8 @@ void Actor_After_UpdateAll_Hack(z64_actor_t* actor, z64_game_t* game) {
     // Add additional actor hacks here. These get called shortly after the call to actor_init
     // Hacks are responsible for checking that they are the correct actor.
     EnWonderitem_AfterInitHack(actor, game);
+    bb_after_init_hack(actor, game);
+
     CURR_ACTOR_SPAWN_INDEX = 0; // reset CURR_ACTOR_SPAWN_INDEX
 }
 
@@ -73,32 +101,54 @@ void Actor_StoreFlag(z64_actor_t* actor, z64_game_t* game, xflag_t flag) {
         extra->actor_id = CURR_ACTOR_SPAWN_INDEX;
     }
     override_t override = lookup_override_by_newflag(&flag);
-    switch (actor->actor_id) {
-        // For the following actors we store the flag in the new space added to the actor.
-        case OBJ_TSUBO:
-        case EN_TUBO_TRAP:
-        case OBJ_KIBAKO:
-        case OBJ_COMB:
-        case OBJ_KIBAKO2:
-        case EN_ITEM00:
-        case EN_WONDER_ITEM:
+    if(override.key.all)
+    {
+        if(actor->actor_type == ACTORCAT_ENEMY && actor->actor_id != 0x0197) //Hack for most enemies. Specifically exclude gerudo fighters (0x197)
         {
-            // For these actors, only store the flag if there is a valid override
-            if (override.key.all) {
-                extra->flag = flag;
-            }
-            break;
-        }
-        case BG_SPOT18_BASKET:
-        case OBJ_MURE3:
-        case BG_HAKA_TUBO:
-        {
-            // For these actors which use subflags, always store the flag which serves as the base when calculating the subflag.
-            // Don't really need to do this since we will recalculate the flag and check the override when spawning the subflags.
             extra->flag = flag;
+            // Add marker for enemy drops
+            if(!Get_NewFlag(&flag)) {
+                extra->minimap_draw_flags = MINIMAP_FLAGS_DRAW | MINIMAP_FLAGS_ENEMY;
+            }
+            return;
         }
-        default: {
-            break;
+
+        switch(actor->actor_id)
+        {
+            // For the following actors we store the flag in the new space added to the actor.
+            case OBJ_TSUBO:
+            case EN_TUBO_TRAP:
+            case OBJ_KIBAKO:
+            case OBJ_COMB:
+            case OBJ_KIBAKO2:
+            case EN_ITEM00:
+            case BG_SPOT18_BASKET:
+            case OBJ_MURE3:
+            case BG_HAKA_TUBO:
+            case EN_WONDER_ITEM:
+            case EN_KUSA:
+            case OBJ_MURE2:
+            case EN_IK: // Check for iron knuckles (they use actor category 9 (boss) and change to category 5 but a frame later if the object isnt loaded)
+            case EN_SW: // Check for skullwalltula (en_sw). They start as category 4 (npc) and change to category 5 but a frame later if the object isnt laoded
+            case EN_ANUBICE_TAG: //Check for anubis spawns
+            case ACTOR_FISHING:
+            case EN_GS:
+            case ACTOR_EN_ELF:
+            case ACTOR_EN_BUTTE:
+            case ACTOR_SHOT_SUN:
+            case ACTOR_OBJ_BEAN:
+            {
+                extra->flag = flag;
+                // Add marker for enemy drops
+                if(!Get_NewFlag(&flag)) {
+                    extra->minimap_draw_flags = MINIMAP_FLAGS_DRAW | MINIMAP_FLAGS_ENEMY;
+                }
+                break;
+            }
+            default:
+            {
+                break;
+            }
         }
     }
 }
@@ -146,6 +196,10 @@ void Actor_StoreChestType(z64_actor_t* actor, z64_game_t* game) {
         override = get_newflag_override(flag);
         pChestType = &(((ObjComb*)actor)->chest_type);
     }
+    else if(actor->actor_id == EN_KUSA) {
+        override = get_newflag_override(flag);
+        pChestType = &(((EnKusa*)actor)->chest_type);
+    }
     if (override.key.all != 0 && pChestType != NULL) { // If we don't have an override key, then either this item doesn't have an override entry, or it has already been collected.
         if (POTCRATE_TEXTURES_MATCH_CONTENTS == PTMC_UNCHECKED && override.key.all > 0) { // For "unchecked" PTMC setting: Check if we have an override which means it wasn't collected.
             *pChestType = GILDED_CHEST;
@@ -168,6 +222,11 @@ z64_actor_t* Actor_SpawnEntry_Hack(void* actorCtx, ActorEntry* actorEntry, z64_g
     bool continue_spawn = true;
     bool overridden = false;
     actor_after_spawn_func after_spawn_func = NULL;
+
+    // Handle actor's that we've patched out using ID 0xFFFF
+    if(actorEntry->id == 0xFFFF)
+        return NULL;
+
     switch (actorEntry->id) {
         case EN_G_SWITCH: {
             continue_spawn = spawn_override_silver_rupee(actorEntry, globalCtx, &overridden);
@@ -178,7 +237,16 @@ z64_actor_t* Actor_SpawnEntry_Hack(void* actorCtx, ActorEntry* actorEntry, z64_g
             break;
         }
     }
-    z64_actor_t* spawned = NULL;
+    if (continue_spawn) {
+        continue_spawn = spawn_override_enemy_spawn_shuffle(actorEntry, globalCtx, SPAWN_FLAGS_SPAWNENTRY);
+    }
+    /*
+    if(continue_spawn)
+    {
+        continue_spawn = spawn_override_enemizer(actorEntry, globalCtx, &overridden);
+    }
+    */
+    z64_actor_t *spawned = NULL;
     if (continue_spawn) {
         spawned = z64_SpawnActor(actorCtx, globalCtx, actorEntry->id, actorEntry->pos.x, actorEntry->pos.y, actorEntry->pos.z,
             actorEntry->rot.x, actorEntry->rot.y, actorEntry->rot.z, actorEntry->params);
@@ -194,11 +262,11 @@ bool spawn_override_silver_rupee(ActorEntry* actorEntry, z64_game_t* globalCtx, 
     *overridden = false;
     if (SHUFFLE_SILVER_RUPEES) { // Check if silver rupee shuffle is enabled.
         xflag_t flag = {
-            .scene = globalCtx->scene_index,
-            .setup = curr_scene_setup,
-            .room = globalCtx->room_index,
-            .flag = CURR_ACTOR_SPAWN_INDEX,
-            .subflag = 0,
+        .scene = globalCtx->scene_index,
+        .setup = curr_scene_setup,
+        .room = globalCtx->room_ctx.curRoom.num,
+        .flag = CURR_ACTOR_SPAWN_INDEX,
+        .subflag = 0
         };
 
         flag = resolve_alternative_flag(&flag);
@@ -239,6 +307,66 @@ z64_actor_t* Player_SpawnEntry_Hack(void* actorCtx, ActorEntry* playerEntry, z64
     return z64_SpawnActor(actorCtx, globalCtx, playerEntry->id, playerEntry->pos.x, playerEntry->pos.y, playerEntry->pos.z,
         playerEntry->rot.x, playerEntry->rot.y, playerEntry->rot.z, playerEntry->params);
 }
+//Return 1 to not spawn the actor, 0 to spawn the actor
+//If enemy drops setting is enabled, check if the flag for this actor hasn't been set and make sure to spawn it.
+//Flag is the index of the actor in the actor spawn list, or -1 if this function is not being called at the room init.
+//Parent will be set if called by Actor_SpawnAsChild
+uint8_t Actor_Spawn_Clear_Check_Hack(z64_game_t* globalCtx, ActorInit* actorInit, int16_t flag, z64_actor_t* parent)
+{
+    //probably need to do something specific for anubis spawns because they use the spawner items. Maybe flare dancers too?
+    if(actorInit->id == 0x00E0 && parent != NULL)
+    {
+        ActorAdditionalData* extra = Actor_GetAdditionalData(parent);
+        xflag_t xflag = extra->flag;
+        if (xflag.all) {
+            xflag = resolve_alternative_flag(&xflag);
+            override_t override = lookup_override_by_newflag(&xflag);
+            if(override.key.all != 0 && !(Get_NewFlag(&xflag)>0))
+            {
+                return 0;
+            }
+        }
+    }
+    if((actorInit->category == ACTORCAT_ENEMY) && z64_Flags_GetClear(globalCtx, globalCtx->room_ctx.curRoom.num))
+    {
+        //Check if we're spawning an actor from the room's actor spawn list
+        if(flag > 0)
+        {
+            // Build an xflag
+            xflag_t xflag = (xflag_t) { 0 };
+
+            xflag.scene = globalCtx->scene_index;
+            if(globalCtx->scene_index == 0x3E) {
+                
+                xflag.grotto.room = globalCtx->room_ctx.curRoom.num;
+                xflag.grotto.grotto_id = CURRENT_GROTTO_ID;
+                xflag.grotto.flag = flag;
+                xflag.grotto.subflag = 0;
+            }
+            else {
+                xflag.room = globalCtx->room_ctx.curRoom.num;
+                xflag.setup = curr_scene_setup;
+                xflag.flag = flag;
+                xflag.subflag = 0;
+            }
+
+            xflag = resolve_alternative_flag(&xflag);
+            override_t override = lookup_override_by_newflag(&xflag);
+
+            //Check if this actor is in the override list
+            if(override.key.all != 0 && !(Get_NewFlag(&xflag)>0))
+            {
+                return 0;
+            }
+            return 1;
+        }
+
+        return 1;
+    }
+
+
+    return 0;
+}
 
 // This is our entrypoint back into Actor_Spawn. Call/return this to spawn the actor
 extern z64_actor_t* Actor_Spawn_Continue(void* actorCtx, z64_game_t* globalCtx, int16_t actorId, float posX, float posY, float posZ, int16_t rotX, int16_t rotY, int16_t rotZ, int16_t params);
@@ -256,6 +384,8 @@ z64_actor_t* Actor_Spawn_Hook(void* actorCtx, z64_game_t* globalCtx, int16_t act
     entry.rot.y = rotY;
     entry.rot.z = rotZ;
 
+    continue_spawn = spawn_override_enemy_spawn_shuffle(&entry, globalCtx, SPAWN_FLAGS_ACTORSPAWN);
+
     if (continue_spawn) {
         z64_actor_t* spawned = Actor_Spawn_Continue(actorCtx, globalCtx, actorId, posX, posY, posZ, rotX, rotY, rotZ, params);
         if (spawned) {
@@ -267,4 +397,47 @@ z64_actor_t* Actor_Spawn_Hook(void* actorCtx, z64_game_t* globalCtx, int16_t act
         return spawned;
     }
     return NULL;
+}
+
+z64_actor_t * Actor_SpawnAsChildWithSubflag(void* actorCtx, z64_actor_t* parent, z64_game_t* globalCtx, int16_t actorId, float posX, float posY, float posZ, int16_t rotX, int16_t rotY, int16_t rotZ, int16_t params, uint8_t subflag) {
+    xflag_t flag = { 0 };
+    Actor_BuildFlag(parent, &flag, Actor_GetAdditionalData(parent)->actor_id, subflag);
+    spawn_actor_with_flag = &flag;
+    z64_actor_t* spawned = Actor_SpawnAsChild_Hook(actorCtx, parent, globalCtx, actorId, posX, posY, posZ, rotX, rotY, rotZ, params);
+    spawn_actor_with_flag = NULL;
+    return spawned;
+}
+
+z64_actor_t * Actor_SpawnAsChild_Hook(void* actorCtx, z64_actor_t* parent, z64_game_t* globalCtx, int16_t actorId, float posX, float posY, float posZ, int16_t rotX, int16_t rotY, int16_t rotZ, int16_t params) {
+    actor_spawn_as_child_flag = 1;
+    actor_spawn_as_child_parent = parent;
+    z64_actor_t* spawned = Actor_SpawnAsChild(actorCtx, parent, globalCtx, actorId, posX, posY, posZ, rotX, rotY, rotZ, params);
+    actor_spawn_as_child_flag = 0;
+    actor_spawn_as_child_parent = NULL;
+    return spawned;
+}
+
+z64_actor_t* curr_updating_actor = NULL;
+
+void Actor_Update_Hook(z64_actor_t* actor, z64_game_t* globalCtx, ActorFunc updateFunc) {
+    curr_updating_actor = actor;
+    updateFunc(actor, globalCtx);
+    curr_updating_actor = NULL;
+}
+// Replaces the Actor_Kill function
+// Jumped to from the original
+void Actor_Kill_New(z64_actor_t* this) {
+    this->update = NULL;
+    this->draw = NULL;
+    this->flags &= ~(1 << 0);
+
+    // Hack for forest platform. Check if the actor has a parent BgMoriBigst
+    if(this->parent && this->parent->actor_id == 0x0086) { // BgMoriBigst
+        if(((BgMoriBigst*)(this->parent))->child1 == this) {
+            ((BgMoriBigst*)(this->parent))->child1 = NULL;
+        }
+        if(((BgMoriBigst*)(this->parent))->child2 == this) {
+            ((BgMoriBigst*)(this->parent))->child2 = NULL;
+        }
+    }
 }

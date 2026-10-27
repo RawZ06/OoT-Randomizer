@@ -1,6 +1,6 @@
 {
   "settings": {
-    "open_door_of_time": true,
+    "open_door_of_time": "open",
     "open_forest": "open",
     "bridge": "open",
     "triforce_hunt": false,
@@ -85,7 +85,7 @@
     "HF Deku Scrub Grotto":                       ["Bow", "Magic Meter", "Light Arrows"],
     "HF Near Market Grotto Chest":                ["Bow", "Magic Meter", "Light Arrows"],
     "HF Tektite Grotto Freestanding PoH":         ["Bow", "Magic Meter", "Light Arrows"],
-    "Kak Redead Grotto Chest":                    ["Bow", "Magic Meter", "Light Arrows"],
+    "Kak ReDead Grotto Chest":                    ["Bow", "Magic Meter", "Light Arrows"],
     "Kak Open Grotto Chest":                      ["Bow", "Magic Meter", "Light Arrows"],
     "DMT Storms Grotto Chest":                    ["Bow", "Magic Meter", "Light Arrows"],
     "DMC Upper Grotto Chest":                     ["Bow", "Magic Meter", "Light Arrows"],

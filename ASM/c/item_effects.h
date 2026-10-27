@@ -30,7 +30,11 @@ void open_gate_and_mask_shop(z64_file_t* save, int16_t arg1, int16_t arg2);
 void give_bombchus(z64_file_t* save, int16_t arg1, int16_t arg2);
 void trade_quest_upgrade(z64_file_t* save, int16_t item_id, int16_t arg2);
 extern uint8_t KEYRING_BOSSKEY_CONDITION;
-void unlock_ocarina_note(z64_file_t* save, int16_t arg1, int16_t arg2);
+void unlock_ocarina_note(z64_file_t *save, int16_t arg1, int16_t arg2);
+void give_enemy_soul(z64_file_t *save, int16_t arg1, int16_t arg2);
+void give_regional_enemy_soul(z64_file_t *save, int16_t arg1, int16_t arg2);
+void give_fishing_rod(z64_file_t* save, int16_t arg1, int16_t arg2);
+void give_fish(z64_file_t* save, int16_t weight, int16_t age);
 
 typedef enum dungeon {
     DEKU_ID       = 0,

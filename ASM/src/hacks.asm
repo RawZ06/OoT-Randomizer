@@ -43,7 +43,7 @@ Gameplay_InitSkybox:
 .area 0x1C
     lui     at, hi(AUDIO_THREAD_INFO_MEM_START)
     lw      a0, lo(AUDIO_THREAD_INFO_MEM_START)(at)
-    jal     0x800B8654
+    jal     0x800B8654 ; AudioLoad_Init
     lw      a1, lo(AUDIO_THREAD_INFO_MEM_SIZE)(at)
     lw      ra, 0x0014(sp)
     jr      ra
@@ -243,7 +243,7 @@ Gameplay_InitSkybox:
 
     li      at, 0x117A4 //object table
     addu    a0, a0, at
-    jal     0x80081628          //check if object file is loaded
+    jal     Object_GetIndex          //check if object file is loaded. This calls the original version instead of the hooked one.
     addiu   a1, r0, 0x02        //gameplay_field_keep
     b       @return_check_if_object_loaded
     nop
@@ -692,6 +692,38 @@ SRAM_SLOTS:
     j       ObjTsubo_SpawnCollectible_Hack
     nop
 
+;Hack Item_DropCollectibleRandom to add the enemy drop flag and extended flag
+.orga 0xA899E4 ; in memory 0x80013A84
+;Replaces:
+;addiu  sp, sp, -0x60
+;sw     s6, 0x0044(sp)
+;sll    s6, a3, 16
+;sw     s7, 0x0048(sp)
+addiu   sp, sp, -0x60
+sw      ra, 0x004C(sp)
+jal drop_collectible_random_hook
+nop
+.skip 24
+nop  ; Replaces the sw ra, 0x004C(sp) later on so we dont screw up our return address because we already saved it.
+
+; Hack Actor_Spawn when it checks if the room is clear to still spawn the enemies
+.orga 0xA9B1CC ; in memory 0x8002526C
+jal actor_spawn_clear_check_hook
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+
+; Hack Dark Link room En_Blkobj for enemy soul shuffle
+; At call to Actor_Find
+.orga 0xE1156C ; VRAM 0x80A8EC2C
+; Replaced code:
+;   jal Actor_Find
+    jal En_Blkobj_Actor_Find_Hook
+
 ; Hack ObjKibako2_SpawnCollectible (Large crates) to call our overridden spawn function
 ;
 .orga 0xEC8264
@@ -746,6 +778,79 @@ SRAM_SLOTS:
     jal     Actor_Spawn_Malloc_Hack
     sw      v1, 0x004C(sp)
 
+; Hack baby dodongo to pass its actor pointer into Item_DropCollectibleRandom
+.orga 0xC596E0 ; In memory: 0x801F8AF0
+;replaces
+; or a1, r0, r0
+or a1, r0, s0
+
+; Hack skullwalltula to pass its actor pointer into Item_DropCollectibleRandom
+.orga 0xCE4DC0
+;replaces
+; or a1, r0, r0
+or a1, r0, s0
+
+; Hack Gohma larva to pass its actor pointer into Item_DropCollectibleRandom
+.orga 0xC527F0
+;replaces
+;   or a1, r0, r0
+or  a1, r0, s0
+
+; Hack big skulltulas to pass its actor pointer in Item_DropCollectibleRandom
+.orga 0xC63CB4
+;replaces
+;   or a1, r0, r0
+or a1, r0, s0
+
+; Hack shaboms to pass its actor pointer in Item_DropCollectibleRandom
+.orga 0xC54B68
+;replaces
+;   or a1, r0, r0
+or a1, r0, s6
+
+; Hack flare dancer core to pass its parent actor pointer into Item_DropCollectibleRandom
+.orga 0xD15E34
+;replaces
+;   or a1, r0, r0
+or a1, r0, v0 ;parent is stored in v0
+
+; Hack redead/gibdo to pass its actor pointer into Item_DropCollectibleRandom
+.orga 0xCD908C
+;replaces
+;   or a1, r0, r0
+or a1, r0, s0 ;parent is stored in v0
+
+; Hack skull kids (en_skj) to spawn an overridden collectible
+.orga 0xDF1928
+;replaces
+;   jal     Item_DropCollectible
+;   swcl    f8, 0x44(sp)
+    jal       en_skj_drop_collectible_hook
+    nop
+
+; Hack Bubble (en_bb) to spawn sparkles for fire bubbles
+.orga 0xCB2F28
+;replaces
+;   jal 0x800214AC
+;   sh  v0, 0x004E(sp)
+jal bb_red_wait_hook
+sh  v0, 0x004E(sp)
+
+; Hack Guays (en_crow) to not respawn in enemy drop shuffle
+.orga 0xEEE834 ; Beginning of EnCrow_SetupRespawn
+; replaces
+;   addiu   sp, sp, -0x18
+;   lui     v0, 0x801E      ; this code needs to be skipped because it is relocated
+;   addiu   v0, v0, 0x6E98  ; this code needs to be skipped because it is relocated
+;   sw      ra, 0x0014(sp)
+;   or      a2, a0, r0
+;   lw      t6, 0x0000(v0)
+; Store caller's return address
+    addiu   sp, sp, -0x30
+    .skip   8   ; Skip relocated code
+    sw      ra, 0x10(sp)
+    jal     en_crow_respawn_hack
+    nop
 
 ; Hack in Actor_Spawn after the null check to offset the pointer by the amount that we added to the actor, so the new data is at the start
 .org 0x800252CC
@@ -772,6 +877,15 @@ Actor_Spawn_Continue_Jump_Point:
 .skip 4
     addiu   a0, s0, -0x10
 
+; Hack for enemy drop shuffle to display enemy markers on the minimap
+.headersize (0x800110A0 - 0xA87000)
+; Hack at call to Minimap_Draw in Interface_Draw
+.org 0x80075D48
+; Replaces
+;   jal     0x8006CA64
+    jal     MiniMap_Draw_Hook
+
+
 ; Hook Actor_UpdateAll when each actor is being initialized. At the call to Actor_SpawnEntry
 ; Used to set the flag (z-rotation) of the actor to its position in the actor table.
 .orga 0xA99D48 ; In memory: 0x80023DE8
@@ -784,6 +898,10 @@ Actor_Spawn_Continue_Jump_Point:
 ; Replaces: Entire function
     j       Actor_SpawnEntry_Hack
     nop
+
+; Hack Actor_Spawn to load unloaded objects
+;.orga 0xA9B1B4; In memory: 0x80025254
+;    jal     object_getindex_or_spawn_extended
 
 .orga 0xA99C98 ; In memory: 0x80023D38
     jal     Player_SpawnEntry_Hack
@@ -851,6 +969,30 @@ Actor_Spawn_Continue_Jump_Point:
 .orga 0xDE8C94
     j       EnWonderItem_DropCollectible_Hack
     nop
+
+; Hack Actor_RemoveFromCategory to prevent setting the room clear flag if the room has unspawned enemies from enemy spawn shuffle
+.orga 0xA9AFEC ; In memory: 0x8002508C
+; Replaces:
+;   jal     0x800206AC Flags_SetTempClear
+    jal     Actor_RemoveFromCategory_SetTempClear_Hack
+
+; Hack in Scene_CommandActorEntryList to reset the flag used to check if the room has unspawned enemies from enemy spawn shuffle
+.orga 0xAF786C ; In memory: 0x8008190C
+; Replaces:
+;   sb      t6, 0x1DEB(at)
+;   lw      v0, 0x0004(a1)
+;   lui     t0, 0x8012
+;   lui     at, 0x00FF
+;   sll     t7, v0, 4
+;   srl     t8, t7, 28
+
+;   Need to set up the stack because this function doesn't store it's RA
+    addiu   sp, sp, -0x20
+    sw      ra, 0x10(sp)
+    jal     Actor_UpdateAll_ClearRoomEnemyInhibit
+    sb      t6, 0x1DEB(at) ; some replaced code
+    lw      ra, 0x10(sp)
+    addiu   sp, sp, 0x20
 
 ; Runs when storing an incoming item to the player instance
 ; Replaces:
@@ -965,6 +1107,7 @@ Actor_Spawn_Continue_Jump_Point:
     addiu   at, r0, 0x8383 ; Make branch impossible
 
 ; Change Skulltula Token to give a different item
+; Mutated by Patches.py
 ; Replaces
 ;    move    a0, s1
 ;    jal     0x0006FDCC        ; call ex_06fdcc(ctx, 0x0071); VROM: 0xAE5D2C
@@ -975,7 +1118,7 @@ Actor_Spawn_Continue_Jump_Point:
 ;    li      a1, 0xB4          ; a1 = 0x00b4 ("You destoryed a Gold Skulltula...")
 ;    move    a2, zero
 ;    jal     0x000DCE14        ; call ex_0dce14(ctx, 0x00b4, 0)
-;    sh      t4, 0x110 (t5)    ; *(t5 + 0x110) = 0x000a
+;    sh      t4, 0x110 (t5)    ; *(t5 + 0x110) = 0x000a (Freeze the player actor for 10 frames)
 .orga 0xEC68BC
 .area 0x28, 0
     lw      t5, 0x2C (sp)                ; original code
@@ -995,12 +1138,12 @@ Actor_Spawn_Continue_Jump_Point:
 .endarea
 
 ;Hack to EnItem00_Init to spawn deku shield, hylian shield, and tunic objects
-.orga 0xA87DC8 ;In memory 0x80011E68
-    jal object_index_or_spawn ;Replace call to z64_ObjectIndex
-.orga 0xA87E24 ;In memory 0x80011EC4
-    jal object_index_or_spawn ;Replace call to z64_ObjectIndex
-.orga 0xA87E80 ;In memory 0x80011F20
-    jal object_index_or_spawn ;Replace call to z64_ObjectIndex
+;.orga 0xA87DC8 ;In memory 0x80011E68
+;    jal object_index_or_spawn ;Replace call to z64_ObjectIndex
+;.orga 0xA87E24 ;In memory 0x80011EC4
+;    jal object_index_or_spawn ;Replace call to z64_ObjectIndex
+;.orga 0xA87E80 ;In memory 0x80011F20
+;    jal object_index_or_spawn ;Replace call to z64_ObjectIndex
 
 ; Fix autocollect magic jar wonder items
 ; Replaces:
@@ -1797,6 +1940,15 @@ skip_GS_BGS_text:
     jal     fishing_bite_when_stable
     lwc1    f10, 0x0198(s0)
 
+; Prevent fish from losing interest seemingly randomly
+; Replaces: sh      v0, 0x0148(s0)
+;           swc1    f20, 0x0180(s0)
+;           swc1    f10, 0x0184(s0)
+.orga 0xDC6300
+    nop
+    nop
+    nop
+
 ; Remove most fish loss branches
 .orga 0xDC87A0
     nop
@@ -2465,6 +2617,19 @@ skip_bombchu_bowling_prize_switch:
     subu    t7, r0, a2
     lw      ra, 0x0C (sp)
 
+; extends object table lookup for calls to object_index_or_spawn
+
+.headersize (0x800110A0 - 0xA87000)
+.org 0x8008130C
+; Replaces:
+;   lui     t2, 0x8010
+;   multu   t7, v1
+;   addiu   t2, t2, 0x8FF8
+    multu   t7, v1
+    jal     extended_object_lookup_objectspawn
+    nop
+.headersize(0)
+
 ; extends object table lookup for shop item load
 .orga 0xAF74F8
     sw      ra, 0x44 (sp)
@@ -2896,11 +3061,70 @@ courtyard_guards_kill:
     jal     grotto_entrance
     lui     at, 1
 
-; Replaces: addu    at, at, a3
+; Replaces: lui     at, 0x0001
+;           addu    at, at, a3
 ;           sh      t6, 0x1E1A(at)
-.orga 0xBD4C58
+;           lh      v0, 0x1E1A(v1)
+;           addiu   at, zero, 0x7FFF
+;           addiu   t7, zero, 0x0002
+.orga 0xBD4C54
+    lui     at, 0x0001
     jal     scene_exit_hook
     addu    at, at, a3
+    bnez    v0, @skip_other_entrance_routines
+    addiu   at, zero, 0x7FFF
+    lh      v0, 0x1E1A(v1)
+
+.orga 0xBD4D4C
+@skip_other_entrance_routines:
+
+; Replaces: lui     v1, 0x8012
+;           lw      v1, -0x5A28(v1)
+.orga 0xB11000
+    jal     override_special_grotto_entrances_1
+    lui     v1, 0x8012
+
+; Replaces: sw      t4, 0x000C(s0)
+;           sw      t5, 0x0010(s0)
+.orga 0xB113D0
+    jal     override_special_grotto_entrances_2
+    sw      t4, 0x000C(s0)
+
+; Replaces: sw      v0, 0x000C(s0)
+;           sw      t9, 0x0010(s0)
+.orga 0xB11608
+    jal     override_special_grotto_entrances_3
+    sw      v0, 0x000C(s0)
+
+; Replaces: sw      t3, 0x0010(s0)
+;           sw      v0, 0x000C(s0)
+.orga 0xB117F4
+    jal     override_special_grotto_entrances_4
+    sw      t3, 0x0010(s0)
+
+; Replaces: sw      t3, 0x0010(s0)
+;           sw      v0, 0x000C(s0)
+.orga 0xB11984
+    jal     override_special_grotto_entrances_4
+    sw      t3, 0x0010(s0)
+
+; Replaces: lui     v0, 0x8012
+;           addiu   v0, v0, 0xA5D0
+;           lw      t6, 0x0010(v0)
+;           lui     t0, 0x8010
+;           beql    t6, zero, 0xAF869C
+;           lw      t8, 0x0004(v0)
+;           lw      t7, 0x0004(v0)
+;           lui     v0, 0x0001
+.orga 0xAF863C
+    addiu   sp, sp, -0x18
+    sw      ra, 0x04(sp)
+    jal     override_special_grotto_entrances_5
+    nop
+    lw      ra, 0x04(sp)
+    addiu   sp, sp, 0x18
+    beq     t6, zero, 0xAF869C
+    lui     v0, 0x0001
 
 ;==================================================================================================
 ; Getting Caught by Gerudo NPCs in ER
@@ -3075,18 +3299,6 @@ courtyard_guards_kill:
     sw      t9, 0x0000(s1)
     lhu     t4, 0x0252(s7)
     move    at, v0
-
-;==================================================================================================
-; King Zora Init Moved Check Override
-;==================================================================================================
-; Replaces: lhu     t0, 0x0EDA(v0)
-;           or      a0, s0, zero
-;           andi    t1, t0, 0x0008
-
-.orga 0xE565D0
-    jal     kz_moved_check
-    nop
-    or      a0, s0, zero
 
 ; ==================================================================================================
 ; HUD Button Colors
@@ -3742,12 +3954,6 @@ DemoEffect_DrawJewel_AfterHook:
 .orga 0xDB32C8
     jal     blue_fire_arrows ; replaces addiu at, zero, 0x00F0
 
-;===================================================================================================
-; Give each cursed skulltula house resident a different text ID, for skulltula reward hints
-;===================================================================================================
-.orga 0xEA2664
-    addiu   t1, t1, 0x9003
-
 ;==================================================================================================
 ; Base Get Item Draw Override
 ;==================================================================================================
@@ -4153,11 +4359,36 @@ DemoEffect_DrawJewel_AfterHook:
 .include "hacks/ovl_bg_gate_shutter.asm"
 .include "hacks/ovl_bg_haka_tubo.asm"
 .include "hacks/ovl_bg_spot18_basket.asm"
+.include "hacks/ovl_demo_kankyo.asm"
 .include "hacks/ovl_en_dns.asm"
 .include "hacks/ovl_en_ko.asm"
 .include "hacks/ovl_en_kz.asm"
 .include "hacks/ovl_obj_mure3.asm"
 .include "hacks/z_parameter.asm"
+.include "hacks/ovl_en_po_field.asm"
 .include "hacks/z_title.asm"
 .include "hacks/z_file_choose.asm"
+.include "hacks/ovl/ovl_kaleido_scope.asm"
+.include("hacks/ovl_en_kusa.asm")
+.include("hacks/ovl_obj_mure2.asm")
+.include("hacks/ovl_obj_hana.asm")
+.include("hacks/ovl_fishing.asm")
+.include "hacks/ovl_en_gs.asm"
+.include("hacks/ovl_en_ishi.asm")
+.include("hacks/ovl_obj_hamishi.asm")
+.include("hacks/code.asm")
+.include("hacks/object_fixes.asm")
+.include "hacks/ovl_player.asm"
 .include "hacks/ovl_en_changer.asm"
+.include "hacks/ovl_bg_mori_bigst.asm"
+.include "hacks/ovl_en_anubice_tag.asm"
+.include "hacks/ovl_en_karebaba.asm"
+.include("hacks/ovl_effect_ss_kakera.asm")
+.include "hacks/ovl_en_ssh.asm"
+.include "hacks/ovl_en_okarina_tag.asm"
+.include "hacks/ovl_en_elf.asm"
+.include "hacks/ovl_en_butte.asm"
+.include "hacks/ovl_obj_mure.asm"
+.include "hacks/ovl_bg_spot11_oasis.asm"
+.include "hacks/ovl_shot_sun.asm"
+.include "hacks/ovl_obj_bean.asm"

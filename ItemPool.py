@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Optional
 
 from Item import Item, ItemInfo, ItemFactory
 from Location import DisableType
+import StartingItems
 
 if TYPE_CHECKING:
     from Plandomizer import ItemPoolRecord
@@ -310,8 +311,95 @@ child_trade_items: tuple[str, ...] = (
     "Mask of Truth",
 )
 
+ocarina_buttons: tuple[str, ...] = (
+    'Ocarina A Button',
+    'Ocarina C down Button',
+    'Ocarina C right Button',
+    'Ocarina C left Button',
+    'Ocarina C up Button',
+)
+
 normal_bottles: list[str] = [bottle for bottle in sorted(ItemInfo.bottles) if bottle not in ('Deliver Letter', 'Sell Big Poe')] + ['Bottle with Big Poe']
 reward_list: list[str] = [item.name for item in sorted([i for n, i in ItemInfo.items.items() if i.type == 'DungeonReward'], key=lambda x: x.special['item_id'])]
+
+enemy_souls_core: list[str] = [
+    'Stalfos Soul',
+    'Octorok Soul',
+    'Wallmaster Soul',
+    'Dodongo Soul',
+    'Keese Soul',
+    'Tektite Soul',
+    'Peahat Soul',
+    'Lizalfos and Dinalfos Soul',
+    'Gohma Larvae Soul',
+    'Shabom Soul',
+    'Baby Dodongo Soul',
+    'Biri and Bari Soul',
+    'Tailpasaran Soul',
+    'Skulltula Soul',
+    'Torch Slug Soul',
+    'Moblin Soul',
+    'Armos Soul',
+    'Deku Baba Soul',
+    'Deku Scrub Soul',
+    'Bubble Soul',
+    'Beamos Soul',
+    'Floormaster Soul',
+    'Redead and Gibdo Soul',
+    'Skullwalltula Soul',
+    'Flare Dancer Soul',
+    'Dead hand Soul',
+    'Shell Blade Soul',
+    'Like Like Soul',
+    'Spike Enemy Soul',
+    'Anubis Soul',
+    'Iron Knuckle Soul',
+    'Skull Kid Soul',
+    'Flying Pot Soul',
+    'Freezard Soul',
+    'Stinger Soul',
+    'Wolfos Soul',
+    'Guay Soul',
+    'Jabu Jabu Tentacle Soul',
+    'Dark Link Soul',
+]
+
+enemy_souls_bosses: list[str] = [
+    'Queen Gohma Soul',
+    'King Dodongo Soul',
+    'Barinade Soul',
+    'Phantom Ganon Soul',
+    'Volvagia Soul',
+    'Morpha Soul',
+    'Bongo Bongo Soul',
+    'Twinrova Soul',
+]
+
+region_souls: list[str] = [
+    'Deku Tree Souls',
+    'Dodongos Cavern Souls',
+    'Jabu Jabus Belly Souls',
+    'Forest Temple Souls',
+    'Fire Temple Souls',
+    'Water Temple Souls',
+    'Shadow Temple Souls',
+    'Spirit Temple Souls',
+    'Bottom of the Well Souls',
+    'Ice Cavern Souls',
+    'Gerudo Training Ground Souls',
+    'Ganons Castle Souls',
+    'Forest Area Souls',
+    'Hyrule Field Souls',
+    'Lake Hylia Souls',
+    'Gerudo Area Souls',
+    'Market Area Souls',
+    'Kakariko Area Souls',
+    'Goron Area Souls',
+    'Zora Area Souls',
+    'Lon Lon Ranch Souls',
+    'Grottos Souls',
+]
+
 song_list: list[str] = [item.name for item in sorted([i for n, i in ItemInfo.items.items() if i.type == 'Song'], key=lambda x: x.index if x.index is not None else 0)]
 junk_pool_base: list[tuple[str, int]] = [(item, weight) for (item, weight) in sorted(ItemInfo.junk_weight.items()) if weight > 0]
 remove_junk_items: list[str] = [item for (item, weight) in sorted(ItemInfo.junk_weight.items()) if weight >= 0]
@@ -484,9 +572,8 @@ def get_pool_core(world: World) -> tuple[list[str], dict[str, Item]]:
             if 'Pocket Egg' in world.settings.adult_trade_start and 'Pocket Cucco' in world.settings.adult_trade_start:
                 pending_junk_pool.remove('Pocket Cucco')
         elif world.settings.adult_trade_start:
-            # With adult trade shuffle off, add a random extra adult trade item
-            item = random.choice(world.settings.adult_trade_start)
-            pending_junk_pool.append(item)
+            # With adult trade shuffle off, add another copy of the selected adult trade item
+            pending_junk_pool.append(world.selected_adult_trade_item)
         if world.settings.zora_fountain != 'open':
             ruto_bottles += 1
         if world.settings.shuffle_kokiri_sword:
@@ -532,16 +619,32 @@ def get_pool_core(world: World) -> tuple[list[str], dict[str, Item]]:
         if world.settings.shuffle_song_items == 'any':
             pending_junk_pool.extend(song_list)
         if world.settings.shuffle_individual_ocarina_notes:
-            pending_junk_pool.extend(['Ocarina A Button', 'Ocarina C up Button', 'Ocarina C left Button', 'Ocarina C down Button', 'Ocarina C right Button'])
+            pending_junk_pool.extend(ocarina_buttons)
+        if world.settings.shuffle_enemy_spawns == 'all':
+            pending_junk_pool.extend(enemy_souls_core + enemy_souls_bosses)
+        elif world.settings.shuffle_enemy_spawns == 'bosses':
+            pending_junk_pool.extend(enemy_souls_bosses)
+        elif world.settings.shuffle_enemy_spawns == 'regional':
+            pending_junk_pool.extend(region_souls)
+        if world.settings.shuffle_fishies:
+            pending_junk_pool.append('Fishing Rod')
+            pending_junk_pool.append('Fish (Child 10 lb)')
+            pending_junk_pool.append('Fish (Adult 16 lb)')
 
     if world.settings.triforce_hunt:
         pending_junk_pool.extend(['Triforce Piece'] * world.settings.triforce_count_per_world)
     if world.settings.shuffle_individual_ocarina_notes:
-        pending_junk_pool.append('Ocarina A Button')
-        pending_junk_pool.append('Ocarina C up Button')
-        pending_junk_pool.append('Ocarina C left Button')
-        pending_junk_pool.append('Ocarina C down Button')
-        pending_junk_pool.append('Ocarina C right Button')
+        pending_junk_pool.extend(ocarina_buttons)
+
+    if world.settings.shuffle_enemy_spawns == 'all':
+        pending_junk_pool.extend(enemy_souls_core + enemy_souls_bosses)
+    elif world.settings.shuffle_enemy_spawns == 'bosses':
+        pending_junk_pool.extend(enemy_souls_bosses)
+    elif world.settings.shuffle_enemy_spawns == 'regional':
+        pending_junk_pool.extend(region_souls)
+
+    if world.settings.shuffle_fishies:
+        pending_junk_pool.append('Fishing Rod')
 
     # Use the vanilla items in the world's locations when appropriate.
     vanilla_items_processed = Counter()
@@ -658,9 +761,13 @@ def get_pool_core(world: World) -> tuple[list[str], dict[str, Item]]:
         elif location.scene == 0x54 and location.vanilla_item == 'Rupees (50)':
             shuffle_item = world.settings.shuffle_frog_song_rupees
 
+        #100 Gold Skulltula Reward
+        elif location.scene == 0x50 and location.vanilla_item == 'Rupees (200)':
+            shuffle_item = world.settings.shuffle_100_skulltula_rupee
+
         # Hyrule Loach Reward
         elif location.scene == 0x49 and location.vanilla_item == 'Rupees (50)':
-            shuffle_item = world.settings.shuffle_loach_reward != 'off'
+            shuffle_item = world.settings.shuffle_loach_reward != 'off' or world.settings.shuffle_fishies
 
         # Adult Trade Quest Items
         elif location.vanilla_item in trade_items:
@@ -703,7 +810,7 @@ def get_pool_core(world: World) -> tuple[list[str], dict[str, Item]]:
         # Gerudo Fortress Freestanding Heart Piece
         elif location.vanilla_item == 'Piece of Heart (Out of Logic)':
             shuffle_item = world.settings.shuffle_gerudo_fortress_heart_piece == 'shuffle'
-            if world.settings.shuffle_hideout_entrances or world.settings.logic_rules == 'glitched':
+            if world.settings.shuffle_hideout_entrances or world.settings.logic_rules == 'advanced':
                 if world.settings.shuffle_hideout_entrances and world.settings.shuffle_gerudo_fortress_heart_piece == 'remove':
                     item = IGNORE_LOCATION
                 else:
@@ -756,7 +863,11 @@ def get_pool_core(world: World) -> tuple[list[str], dict[str, Item]]:
             elif world.settings.shuffle_pots == 'overworld' and not (location.dungeon is not None or (location.parent_region is not None and location.parent_region.is_boss_room)):
                 shuffle_item = True
 
-            if shuffle_item and (location.vanilla_item != 'Nothing' or world.settings.shuffle_empty_pots):
+            if shuffle_item and (not world.settings.fix_broken_actors and location.vanilla_item == 'Deku Shield'):
+                # Special case for Deku Shield.
+                item = 'Nothing'
+                shuffle_item = world.settings.shuffle_empty_pots
+            elif shuffle_item and (location.vanilla_item != 'Nothing' or world.settings.shuffle_empty_pots):
                 shuffle_item = True
             else:
                 shuffle_item = False
@@ -792,6 +903,29 @@ def get_pool_core(world: World) -> tuple[list[str], dict[str, Item]]:
             else:
                 shuffle_item = False
                 location.disabled = DisableType.DISABLED
+        # Enemy Drops
+        elif location.type == 'EnemyDrop':
+            if world.settings.shuffle_enemy_drops:
+                shuffle_item = True
+            else:
+                shuffle_item = False
+                location.disabled = DisableType.DISABLED
+
+        # Fish
+        elif location.type == 'Fish':
+            if world.settings.shuffle_fishies:
+                shuffle_item = True
+            else:
+                shuffle_item = False
+                location.disabled = DisableType.DISABLED
+
+        # Fairies
+        elif location.type in ('GossipFairy', 'ButterflyFairy', 'SunsStormsFairy', 'FountainFairy', 'BeanPlantFairy'):
+            if location.type in world.settings.shuffle_fairies:
+                shuffle_item = True
+            else:
+                shuffle_item = False
+                location.disabled = DisableType.DISABLED
 
         # Dungeon Rewards
         elif location.name == 'ToT Reward from Rauru':
@@ -821,6 +955,13 @@ def get_pool_core(world: World) -> tuple[list[str], dict[str, Item]]:
             else:
                 dungeon = [dungeon for dungeon in world.dungeons if dungeon.name == 'Ganons Castle'][0]
                 dungeon.boss_key.append(ItemFactory(item, world))
+        # Grass
+        elif location.type == 'Grass':
+            if world.settings.shuffle_grass:
+                shuffle_item = True
+            else:
+                shuffle_item = False
+                location.disabled = DisableType.DISABLED
 
         # Dungeon Items
         elif location.dungeon is not None:
@@ -915,7 +1056,7 @@ def get_pool_core(world: World) -> tuple[list[str], dict[str, Item]]:
             else:
                 pending_junk_pool.append(rupee)
 
-    if world.settings.free_scarecrow:
+    if world.settings.scarecrow_behavior == 'free':
         world.state.collect(ItemFactory('Scarecrow Song', world))
 
     if world.settings.no_epona_race:
@@ -996,6 +1137,26 @@ def get_pool_core(world: World) -> tuple[list[str], dict[str, Item]]:
             pool.remove(junk_item)
             pool.append(pending_item)
 
+    world.distribution.collect_starters(world.state)
+
+    if not world.settings.shuffle_individual_ocarina_notes:
+        for ocarina_button in ocarina_buttons:
+            world.state.collect(ItemFactory(ocarina_button, world))
+
+    for _ in range(world.settings.random_starting_items_count):
+        random_starting_items_pool = configure_random_starting_items_pool(world, pool)
+        selected_item = random.choice(random_starting_items_pool)
+        world.randomized_starting_items[selected_item] = world.randomized_starting_items.get(selected_item, 0) + 1
+        pool.remove(selected_item)
+        pool.extend(get_junk_item())
+    add_random_starting_items_ammo(world.randomized_starting_items)
+    for item, count in world.randomized_starting_items.items():
+        item = ItemFactory(item, world)
+        for _ in range(count):
+            if item.solver_id is not None:
+                world.state.collect(item)
+    world.distribution.randomized_starting_items = world.randomized_starting_items
+
     if world.settings.junk_ice_traps in ('custom_count', 'custom_percent'):
         junk_pool[:] = [('Ice Trap', 1)]
         # Get a list of all "junk" type items
@@ -1016,6 +1177,10 @@ def get_pool_core(world: World) -> tuple[list[str], dict[str, Item]]:
             and (ItemInfo.items[item].type != 'DungeonReward' or world.settings.shuffle_dungeon_rewards not in ('vanilla', 'reward'))
         ]
         duplicate_candidates.extend(ludicrous_items_base)
+        if world.settings.shuffle_enemy_spawns == 'all':
+            duplicate_candidates.extend(enemy_souls_core + enemy_souls_bosses)
+        elif world.settings.shuffle_enemy_spawns == 'bosses':
+            duplicate_candidates.extend(enemy_souls_bosses)
         junk_items = [
             item for item in pool
             if item not in duplicate_candidates
@@ -1059,13 +1224,30 @@ def get_pool_core(world: World) -> tuple[list[str], dict[str, Item]]:
         item_groups['Junk'] = remove_junk_items
         world.distribution.distribution.search_groups['Junk'] = remove_junk_items
 
-    world.distribution.collect_starters(world.state)
-
-    if not world.settings.shuffle_individual_ocarina_notes:
-        world.state.collect(ItemFactory('Ocarina A Button', world))
-        world.state.collect(ItemFactory('Ocarina C up Button', world))
-        world.state.collect(ItemFactory('Ocarina C down Button', world))
-        world.state.collect(ItemFactory('Ocarina C left Button', world))
-        world.state.collect(ItemFactory('Ocarina C right Button', world))
-
     return pool, placed_items
+
+
+def configure_random_starting_items_pool(world: World, pool: list[str]) -> list[str]:
+    exclude_list = []
+
+    if 'songs' in world.settings.random_starting_items_exclude:
+        exclude_list.extend(item_groups['Song'])
+    if 'bombchus' in world.settings.random_starting_items_exclude:
+        exclude_list.extend((item for item in pool if 'Bombchus' in item))
+    if 'shields' in world.settings.random_starting_items_exclude:
+        exclude_list.extend(item_groups['Shield'])
+    if 'deku_upgrades' in world.settings.random_starting_items_exclude:
+        exclude_list.extend(('Deku Stick Capacity', 'Deku Nut Capacity'))
+    if 'health_upgrades' in world.settings.random_starting_items_exclude:
+        exclude_list.extend(item_groups['HealthUpgrade'])
+    if 'junk' in world.settings.random_starting_items_exclude:
+        exclude_list.extend(ItemInfo.junk_weight)
+
+    return sorted({item for item in pool if item not in exclude_list and ItemInfo.items[item].type != 'Shop'}) # give each item the same weight regardless of how many copies there are
+
+
+def add_random_starting_items_ammo(randomized_starting_items: dict[str, int]) -> None:
+    for item in StartingItems.inventory.values():
+        if item.item_name in randomized_starting_items and item.ammo:
+            for ammo, qty in item.ammo.items():
+                randomized_starting_items[ammo] = qty[randomized_starting_items[item.item_name] - 1]

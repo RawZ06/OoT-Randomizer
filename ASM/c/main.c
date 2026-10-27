@@ -24,6 +24,9 @@
 #include "debug.h"
 #include "inputviewer.h"
 #include "message.h"
+#include "enemy_spawn_shuffle.h"
+#include "ovl_kaleidoscope.h"
+#include "objects.h"
 
 void Gameplay_InitSkybox(z64_game_t* globalCtx, int16_t skyboxId);
 
@@ -34,6 +37,8 @@ void c_init() {
     override_flags_init();
     models_init();
     init_textures();
+    init_new_menus();
+    extended_objects_init();
 #if DEBUG_MODE
     SKIP_N64_LOGO = 1;
 #endif
@@ -56,6 +61,7 @@ void after_game_state_update() {
     // Else this will cause graphical and/or lag issues on some emulators when pausing.
     if (R_PAUSE_BG_PRERENDER_STATE != PAUSE_BG_PRERENDER_PROCESS) {
         draw_dungeon_info(&rando_overlay_db);
+        draw_world_info(&rando_overlay_db);
         draw_triforce_count(&rando_overlay_db);
         draw_boss_key(&z64_game, &rando_overlay_db);
         draw_silver_rupee_count(&z64_game, &rando_overlay_db);
@@ -83,4 +89,5 @@ void after_scene_init() {
     check_model_skeletons();
     reset_collectible_mutex();
     get_current_scene_setup_number();
+    extended_objects_reset();
 }

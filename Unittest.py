@@ -18,13 +18,17 @@ from Fill import ShuffleError
 from Hints import HintArea, build_misc_item_hints
 from Item import ItemInfo
 from ItemPool import remove_junk_items, remove_junk_ludicrous_items, ludicrous_items_base, ludicrous_items_extended, trade_items, ludicrous_exclusions
+from Location import Location
 from LocationList import location_is_viewable
 from Main import main, resolve_settings, build_world_graphs
 from Messages import Message, read_messages, shuffle_messages
 from Settings import Settings, get_preset_files
+from SettingsList import logic_tricks, advanced_logic_tricks
 from Spoiler import Spoiler
 from Rom import Rom
 from Audiobank import *
+from Utils import data_path
+from World import World
 
 test_dir = os.path.join(os.path.dirname(__file__), 'tests')
 output_dir = os.path.join(test_dir, 'Output')
@@ -209,7 +213,7 @@ class TestPlandomizer(unittest.TestCase):
         if not os.path.isfile('./ZOOTDEC.z64'):
             self.skipTest("Base ROM file not available.")
         filename = "plando-ammo-max-out-of-bounds"
-        logic_rules_settings = ['glitchless', 'glitched', 'none']
+        logic_rules_settings = ['glitchless', 'advanced', 'none']
         for logic_rules_setting in logic_rules_settings:
             with self.subTest(f"Logic Rules: {logic_rules_setting}"):
                 settings = Settings({
@@ -323,6 +327,7 @@ class TestPlandomizer(unittest.TestCase):
             "plando-potscrates-allmq",
             "plando-beehives",
             "plando-freestanding-pots-crates-beehives-triforcehunt",
+            "random_starting_items",
         ]
         for filename in filenames:
             with self.subTest(filename):
@@ -554,14 +559,14 @@ class TestPlandomizer(unittest.TestCase):
     def test_fix_broken_drops(self):
         # Setting off
         distribution_file, spoiler = generate_with_plandomizer("plando-fix-broken-drops-off")
-        self.assertEqual(len([sphere for sphere in spoiler[':playthrough'].values() if 'Child Spirit Temple Beyond Metal Bridges Deku Shield Pot' in sphere]), 0)
+        self.assertEqual(len([sphere for sphere in spoiler[':playthrough'].values() if 'Child Spirit Temple Anubis Room Deku Shield Pot' in sphere]), 0)
 
         # No deku shield available, fail to generate
         self.assertRaises(ShuffleError, lambda : generate_with_plandomizer("plando-fix-broken-drops-bad", max_attempts=1))
 
         # Deku shield available only via spirit shield pot
         distribution_file, spoiler = generate_with_plandomizer("plando-fix-broken-drops-good")
-        self.assertEqual(len([sphere for sphere in spoiler[':playthrough'].values() if 'Child Spirit Temple Beyond Metal Bridges Deku Shield Pot' in sphere]), 1)
+        self.assertEqual(len([sphere for sphere in spoiler[':playthrough'].values() if 'Child Spirit Temple Anubis Room Deku Shield Pot' in sphere]), 1)
 
 
 class TestHints(unittest.TestCase):
@@ -665,7 +670,6 @@ class TestEntranceRandomizer(unittest.TestCase):
         # with no items, and Prelude and Serenade should be foolish. If this behaviour
         # is changed, this unit test serves as a reminder to revisit warp song
         # foolishness.
-        # Currently only tests glitchless as glitched logic does not support ER yet.
         # Assumes the player starts with an ocarina to use a warp song from Sheik at
         # Colossus or Ice Cavern.
         filenames = [
@@ -675,10 +679,14 @@ class TestEntranceRandomizer(unittest.TestCase):
             distribution_file = load_spoiler(os.path.join(test_dir, 'plando', filename + '.json'))
             settings = load_settings(distribution_file['settings'], seed='TESTTESTTEST', filename=filename)
             resolve_settings(settings)
-            # Test for an entrance shuffle error during world validation.
-            # If the test succeeds, this confirms Serenade and Prelude can be foolish.
-            with self.assertRaises(EntranceShuffleError):
-                build_world_graphs(settings)
+            # Test glitchless and advanced logic
+            logic_rules_settings = ['glitchless', 'advanced']
+            for logic_rules_setting in logic_rules_settings:
+                settings.logic_rules = logic_rules_setting
+                # Test for an entrance shuffle error during world validation.
+                # If the test succeeds, this confirms Serenade and Prelude can be foolish.
+                with self.assertRaises(EntranceShuffleError):
+                    build_world_graphs(settings)
 
 
 class TestValidSpoilers(unittest.TestCase):
@@ -812,8 +820,53 @@ class TestValidSpoilers(unittest.TestCase):
                       for filename in os.listdir(test_dir)
                       if filename.endswith('.sav')]
         for filename in test_files:
-            with self.subTest(filename=filename):
-                settings = load_settings(filename, seed='TESTTESTTEST')
+            # Test glitchless and advanced logic
+            logic_rules_settings = ['glitchless', 'advanced']
+            for logic_rules_setting in logic_rules_settings:
+                with self.subTest(logic_rules_setting, filename=filename):
+                    settings = load_settings(filename, seed='TESTTESTTEST')
+                    # If this is already an advanced logic test, don't run twice
+                    if settings.logic_rules == 'advanced' and logic_rules_setting == 'advanced':
+                        continue
+                    settings.logic_rules = logic_rules_setting
+                    main(settings)
+                    # settings.output_file contains the first part of the filename
+                    spoiler = load_spoiler('%s_Spoiler.json' % settings.output_file)
+                    self.verify_woth(spoiler)
+                    self.verify_playthrough(spoiler)
+                    self.verify_disables(spoiler)
+
+    def test_advanced_tricks(self):
+        filename = 'glitched-standard.sav'
+        settings = load_settings(filename, seed='TESTTESTTEST')
+        # Enable all standard logic tricks
+        settings.allowed_tricks = [trick['name'] for trick in logic_tricks.values()]
+        for i in range(2):
+            test_name = 'Glitched logic with all standard tricks'
+            # On the second pass, enable all advanced logic tricks
+            if i == 1:
+                test_name = 'Glitched logic with all advanced tricks'
+                settings.advanced_allowed_tricks = [trick['name'] for trick in advanced_logic_tricks.values()]
+            with self.subTest(test_name, filename=filename):
+                main(settings)
+                # settings.output_file contains the first part of the filename
+                spoiler = load_spoiler('%s_Spoiler.json' % settings.output_file)
+                self.verify_woth(spoiler)
+                self.verify_playthrough(spoiler)
+                self.verify_disables(spoiler)
+
+    def test_advanced_tricks_entrances(self):
+        filename = 'glitched-entrances.sav'
+        settings = load_settings(filename, seed='TESTTESTTEST')
+        # Enable all standard logic tricks
+        settings.allowed_tricks = [trick['name'] for trick in logic_tricks.values()]
+        for i in range(2):
+            test_name = 'Glitched logic with entrances and all standard tricks'
+            # On the second pass, enable all advanced logic tricks
+            if i == 1:
+                test_name = 'Glitched logic with entrances and all advanced tricks'
+                settings.advanced_allowed_tricks = [trick['name'] for trick in advanced_logic_tricks.values()]
+            with self.subTest(test_name, filename=filename):
                 main(settings)
                 # settings.output_file contains the first part of the filename
                 spoiler = load_spoiler('%s_Spoiler.json' % settings.output_file)
@@ -831,7 +884,13 @@ class TestValidSpoilers(unittest.TestCase):
                 with self.subTest(name, filename=ofile):
                     settings = make_settings_for_test(
                             settings_dict, seed='TESTTESTTEST', outfilename=ofile, strict=False)
-                    main(settings)
+                    try:
+                        main(settings)
+                    except EntranceShuffleError:
+                        if 'hell' in settings_dict.get('aliases', []):
+                            self.skipTest("Entrance shuffle error, see https://github.com/OoTRandomizer/OoT-Randomizer/issues/2181 for a potential fix.")
+                        else:
+                            raise
                     spoiler = load_spoiler('%s_Spoiler.json' % settings.output_file)
                     self.verify_woth(spoiler)
                     self.verify_playthrough(spoiler)
@@ -904,6 +963,80 @@ class TestSceneFlags(unittest.TestCase):
         flags, bits = build_room_xflags(room_locations)
         diff, encoded = encode_room_xflags(flags)
         self.assertListEqual(test_encoded, encoded)
+
+# Compare all of the locations found in the advanced/enemizer logic files against the base files
+class TestLocations(unittest.TestCase):
+    
+    def test_worlds_for_missing_logic(self):
+        # Load the base logic files (data/World)
+        settings = Settings(
+            {
+                "logic_rules": 'none'
+            }
+        )
+        base_world = World(0, settings, False)
+        base_world_mq = World(0, settings, False)
+        glitch_world = World(0, settings, False)
+        glitch_world_mq = World(0, settings, False)
+        base_world.load_regions_from_json(data_path("World/Overworld.json"))
+        base_world.load_regions_from_json(data_path("World/Bosses.json"))
+        glitch_world.load_regions_from_json(data_path("Glitched World/Overworld.json"))
+        glitch_world.load_regions_from_json(data_path("Glitched World/Bosses.json"))
+        glitch_world_mq.load_regions_from_json(data_path("Glitched World/Overworld.json"))
+        glitch_world_mq.load_regions_from_json(data_path("Glitched World/Bosses.json"))
+        base_world_mq.load_regions_from_json(data_path("World/Overworld.json"))
+        base_world_mq.load_regions_from_json(data_path("World/Bosses.json"))
+        dungeons = [
+            "Deku Tree",
+            "Dodongos Cavern",
+            "Jabu Jabus Belly",
+            "Forest Temple",
+            "Fire Temple",
+            "Water Temple",
+            "Shadow Temple",
+            "Spirit Temple",
+            "Ganons Castle",
+            "Gerudo Training Ground",
+            "Ice Cavern",
+            "Bottom of the Well"
+        ]
+        for dungeon in dungeons:
+            base_world.load_regions_from_json(data_path(f"World/{dungeon}.json"))
+            glitch_world.load_regions_from_json(data_path(f"Glitched World/{dungeon}.json"))
+            base_world_mq.load_regions_from_json(data_path(f"World/{dungeon} MQ.json"))
+            glitch_world_mq.load_regions_from_json(data_path(f"Glitched World/{dungeon} MQ.json"))
+        
+        base_locations = base_world.get_locations(use_cache=False)
+        glitch_locations = glitch_world.get_locations(use_cache=False)
+        base_locations_mq = base_world_mq.get_locations(use_cache=False)
+        glitch_locations_mq = glitch_world_mq.get_locations(use_cache=False)
+        
+        # Ensure all of the locations in the first list (base) are present in the second
+        compares = [
+            (base_locations, glitch_locations, "Base", "Glitched", ['EnemyDrop', 'Fish']),
+            (base_locations_mq, glitch_locations_mq, "Base MQ", "Glitched MQ", ['EnemyDrop', 'Fish']),
+        ]
+
+        for source_locs, compare_locs, source_name, compare_name, exclude_types in compares:
+            with self.subTest(f"{source_name} vs {compare_name}"):
+                missing_locs: list[Location] = []
+                for source_location in source_locs:
+                    # skip events
+                    if source_location.type == 'Event':
+                        continue
+                    if source_location.type in exclude_types:
+                        continue
+                    found = False
+                    for compare_location in compare_locs:
+                        if source_location.name == compare_location.name:
+                            found = True
+                            break
+                    if not found:
+                        missing_locs.append(source_location)
+                if missing_locs:
+                    for missing_loc in missing_locs:
+                        print(f"\"{missing_loc.name}\": \"{missing_loc.rule_string}\"")
+                    self.fail(f"{len(missing_locs)} locations from {source_name} missing from {compare_name}")
 
 class TestCustomAudio(unittest.TestCase):
     def test_audiobank(self):

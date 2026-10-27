@@ -13,7 +13,7 @@ def build_xflags_from_world(world: World) ->  tuple[dict[int, dict[tuple[int, in
     for i in range(0, 101):
         scene_flags[i] = {}
         for location in world.get_locations():
-            if location.scene == i and location.type in ["Freestanding", "Pot", "FlyingPot", "Crate", "SmallCrate", "Beehive", "RupeeTower", "SilverRupee", "Wonderitem"]:
+            if location.scene == i and location.type in ["Freestanding", "Pot", "FlyingPot", "Crate", "SmallCrate", "Beehive", "RupeeTower", "SilverRupee", "Wonderitem", "EnemyDrop", "Grass", "Fish", "GossipFairy", "ButterflyFairy", "SunsStormsFairy", "FountainFairy", "BeanPlantFairy"]:
                 default = location.default
                 if isinstance(default, list):  # List of alternative room/setup/flag to use
                     primary_tuple = default[0]
@@ -57,7 +57,8 @@ def build_xflag_tables(xflags: dict[int, dict[tuple[int,int], list[tuple[int,int
         scene_table[scene*2 + 1] = (room_table_offset & 0x00FF)
         room_table.append(num_room_setups)
         for setup, room in xflags[scene].keys():
-            if scene == 0x3E:
+            if scene == 0x3E or scene == 0x3C:
+                # Grottos and fairy fountains
                 room_setup = bytearray([setup, room])
             else:
                 room_setup = bytearray([(setup << 6) + room])
@@ -110,24 +111,6 @@ def encode_room_xflags(xflags):
 
     return xflags, rlc_flags
 
-# Create a byte array from the scene flag table created by get_collectible_flag_table
-def get_collectible_flag_table_bytes(scene_flag_table: dict[int, dict[int, int]]) -> tuple[bytearray, int]:
-    num_flag_bytes = 0
-    bytes = bytearray()
-    bytes.append(len(scene_flag_table.keys()))
-    for scene_id in scene_flag_table.keys():
-        rooms = scene_flag_table[scene_id]
-        room_count = len(rooms.keys())
-        bytes.append(scene_id)
-        bytes.append(room_count)
-        for room in rooms:
-            bytes.append(room)
-            bytes.append((num_flag_bytes & 0xFF00) >> 8)
-            bytes.append(num_flag_bytes & 0x00FF )
-            num_flag_bytes += ceil((rooms[room] + 1) / 8)
-
-    return bytes, num_flag_bytes
-
 # Build a list of alternative overrides for alternate scene setups
 def get_alt_list_bytes(alt_list: list[tuple[Location, tuple[int, int, int], tuple[int, int, int]]]) -> bytearray:
     bytes = bytearray()
@@ -138,8 +121,16 @@ def get_alt_list_bytes(alt_list: list[tuple[Location, tuple[int, int, int], tupl
         if location.scene is None:
             continue
         alt_scene = location.scene
+        # Handle ganons tower pots special
         if location.scene == 0x0A:
             alt_scene = 0x19
+        if location.scene == 0x20 and location.type == "Grass": # Alt scene for grass in Child Market
+            alt_scene = 0x21
+
+        # Handle outside ToT Gossip Stones separately
+        if location.scene == 0x23:
+            alt_scene = location.scene + scene_setup
+            scene_setup = 0
 
         alt_override = (scene_setup << 22) | (room << 16) | (flag << 8) | (subflag)
         room, scene_setup, flag, subflag = primary

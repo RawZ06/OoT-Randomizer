@@ -12,6 +12,7 @@ from Region import TimeOfDay
 from RulesCommon import AccessRule, allowed_globals, escape_name
 from State import State
 from Utils import data_path, read_logic_file
+from Boulders import boulder_rules
 
 if TYPE_CHECKING:
     from World import World
@@ -72,6 +73,8 @@ class Rule_AST_Transformer(ast.NodeTransformer):
         self.rule_cache: dict[str, AccessRule] = {}
 
     def visit_Name(self, node: ast.Name) -> Any:
+        if node.id.startswith('BOULDER_TYPE'):
+            return ast.Constant(value=boulder_rules[node.id])
         if node.id in dir(self):
             return getattr(self, node.id)(node)
         elif node.id in rule_aliases:
@@ -345,6 +348,8 @@ class Rule_AST_Transformer(ast.NodeTransformer):
     # Generates an ast.Call invoking the given State function 'name',
     # providing given args and keywords, and adding in additional
     # keyword args from kwarg_defaults (age, etc.)
+    defaults = [ast.keyword(arg='age',value=ast.Name(id="age", ctx=ast.Load())),
+                ast.keyword(arg='spot',value=ast.Name(id="spot", ctx=ast.Load()))]
     def make_call(self, node: ast.AST, name: str, args: list[Any], keywords: list[ast.keyword]) -> ast.Call:
         if not hasattr(State, name):
             raise Exception('Parse Error: No such function State.%s' % name, self.current_spot.name, ast.dump(node, False))
@@ -355,7 +360,7 @@ class Rule_AST_Transformer(ast.NodeTransformer):
                 attr=name,
                 ctx=ast.Load()),
             args=args,
-            keywords=keywords)
+            keywords=keywords + self.defaults)
 
     def replace_subrule(self, target: str, node: ast.AST) -> ast.Call:
         rule = ast.dump(node, False)

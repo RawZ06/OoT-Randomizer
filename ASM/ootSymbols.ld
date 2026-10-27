@@ -17,8 +17,20 @@ Flags_UnsetTempClear = 0x800206C8;
 Flags_GetCollectible = 0x800206E8;
 Flags_SetCollectible = 0x8002071C;
 Actor_SetColorFilter = 0x80027090;
+z64_Item_DropCollectible = 0x80013678;
+z64_Item_DropCollectible2 = 0x800138B0;
+z64_Item_DropCollectibleRandom = 0x80013A84;
+z64_Flags_GetClear = 0x80020640;
+z64_Flags_SetSwitch = 0x800204D0;
+z64_Flags_GetSwitch = 0x8002049C;
+z64_Flags_SetTempClear = 0x800206AC;
+OnePointCutscene_Init = 0x8006b6fc;
+Player_InCsMode = 0x8007943c;
+EffectSsKakera_Spawn = 0x8001d998;
+CutsceneFlags_Get = 0x8005991C;
 z64_Gfx_SetupDL_42Opa = 0x8007E868;
 Audio_StopCurrentMusic = 0x800C7684;
+Audio_PlaySfxGeneral = 0x800C806C;
 sprintf = 0x800CE7b4;
 Fault_AddHungupAndCrashImpl = 0x800AF564;
 z64_ItemIcons = 0x800F8D2C;
@@ -38,3 +50,42 @@ z64_sEquipAnimTimer = 0x8039EAB4;
 z64_sEquipMoveTimer = 0x8039EAB8;
 gActorOverlayTable = 0x800E8530;
 Message_CloseTextbox = 0x800d6218;
+ObjHana_Draw = 0x80abc1c8;
+SkelAnime_Draw = 0x8008a414;
+SkelAnime_DrawFlexOpa = 0x80089d8c;
+Actor_TalkOfferAccepted = 0x80022930;
+Actor_OfferTalk = 0x80022a68;
+Message_GetState = 0x800DD464;
+Message_ShouldAdvance = 0x800d6110;
+Message_ContinueTextbox = 0x800dce80;
+Message_CloseTextbox = 0x800d6218;
+Actor_OfferGetItem = 0x80022bd4;
+z64_segments = 0x80120C38;
+__osMallocInit = 0x800CDD90;
+__osFree = 0x800CE2B4;
+__osMalloc = 0x800CE060;
+z64_LoadRoom_addr = 0x80080A3C;
+z64_UnloadRoom = 0x80080C98;
+sSetupDL = 0x800f7d50;
+gEntranceTable = 0x800f9c90;
+Health_ChangeBy = 0x800720bc;
+Magic_Fill = 0x80072500;
+Actor_PlaySfx = 0x80022fd0;
+Audio_PlaySfxGeneral = 0x800C806C;
+
+OVL_BgMoriBigst_SetupFall = 0x809273d4;
+OVL_BgMoriBigst_SetupDone = 0x809276c0;
+
+OVL_EnKarebaba_SetupDeadItemDrop = 0x809ba560;
+
+OVL_EnKusa_Draw = 0x80a80a50;
+OVL_EnOkarinaTag_Action2 = 0x80a872d0;
+OVL_EnOkarinaTag_Action1 = 0x80a87088;
+
+OVL_EnElf_SpinAction = 0x808874E0;
+
+OVL_EnButte_SetupFollowLink = 0x80a5a3b0;
+OVL_EnButte_SetupTransformIntoFairy = 0x80a5a7b0;
+
+/* Obj_Bean */
+OVL_ObjBean_Init = 0x80a81d88;

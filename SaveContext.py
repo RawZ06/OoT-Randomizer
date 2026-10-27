@@ -27,15 +27,20 @@ class Scenes(IntEnum):
     WATER_TEMPLE = 0x05
     SPIRIT_TEMPLE = 0x06
     SHADOW_TEMPLE = 0x07
+    THIEVES_HIDEOUT = 0x0C
     # Various overworld scenes
+    WINDMILL = 0x48
+    HYRULE_FIELD = 0x51
     GRAVEYARD = 0x53
     ZORAS_RIVER = 0x54
     KOKIRI_FOREST = 0x55
+    SACRED_FOREST_MEADOW = 0x56
     LAKE_HYLIA = 0x57
     GERUDO_VALLEY = 0x5A
     LOST_WOODS = 0x5B
     DESERT_COLOSSUS = 0x5C
     GERUDO_FORTRESS = 0x5D
+    HYRULE_CASTLE = 0x5F
     DEATH_MOUNTAIN_TRAIL = 0x60
     DEATH_MOUNTAIN_CRATER = 0x61
     GORON_CITY = 0x62
@@ -56,8 +61,11 @@ class Address:
     EXTENDED_CONTEXT_START = 0x1450
 
     def __init__(self, address: Optional[int] = None, extended: bool = False, size: int = 4, mask: int = 0xFFFFFFFF, max: Optional[int] = None,
-                 choices: Optional[dict[str, int]] = None, value: Optional[str] = None) -> None:
+                 choices: Optional[dict[str, int]] = None, value: Optional[str] = None, pass_addr: Optional[bool] = False, reset: Optional[int] = 0) -> None:
         self.address: int = Address.prev_address if address is None else address
+        if reset:
+            self.address -= reset
+            Address.prev_address -= reset
         if extended and address is not None:
             self.address += Address.EXTENDED_CONTEXT_START
         self.value: Optional[str | int] = value
@@ -65,7 +73,8 @@ class Address:
         self.choices: Optional[dict[str, int]] = choices
         self.mask: int = mask
 
-        Address.prev_address = self.address + self.size
+        if not pass_addr:
+            Address.prev_address = self.address + self.size
 
         self.bit_offset: int = 0
         while mask & 1 == 0:
@@ -300,6 +309,8 @@ class SaveContext:
             self.give_health(count)
         elif item == "Bombchu Item":
             self.give_bombchu_item(world)
+        elif "Fish" in item and "lb" in item: # Pond fish
+            self.give_pond_fish(world, item)
         elif item in SaveContext.save_writes_table:
             if item.startswith('Silver Rupee (') or item.startswith('Silver Rupee Pouch ('):
                 puzzle = item[:-1].split(' (', 1)[1]
@@ -444,6 +455,21 @@ class SaveContext:
 
     def give_bombchu_item(self, world: World) -> None:
         self.give_item(world, "Bombchus", 0)
+
+    def give_pond_fish(self, world:World, item:str) -> None:
+        # Split the name to figure out child/adult and the size
+        split = item.split('(')[1].split(')')[0].split(' ')
+        age = split[0].lower()
+        weight = int(split[1])
+
+        # Get the current value from addresses
+        addr = self.addresses['fishing'][f'weight_{age}']
+        if addr.value:
+            if weight > addr.value:
+                addr.value = weight
+        else:
+            addr.value = weight
+        return
 
     def equip_default_items(self, age: str) -> None:
         self.equip_items(age, 'equips_' + age)
@@ -915,8 +941,95 @@ class SaveContext:
                 'trials_water': Address(extended=True, size=1),
                 'trials_forest': Address(extended=True, size=1),
             },
+            'collected_dungeon_rewards': Address(extended=True, size=8),
+            'enemy_spawn_flags': {
+                'stalfos': Address(extended=True, size=1, mask=0x01, pass_addr=True),
+                'octorok': Address(extended=True, size=1, mask=0x02, pass_addr=True),
+                'wallmaster': Address(extended=True, size=1, mask=0x04, pass_addr=True),
+                'dodongo': Address(extended=True, size=1, mask=0x08, pass_addr=True),
+                'keese': Address(extended=True, size=1, mask=0x10, pass_addr=True),
+                'tektite': Address(extended=True, size=1, mask=0x20, pass_addr=True),
+                'peahat': Address(extended=True, size=1, mask=0x40, pass_addr=True),
+                'lizalfos_and_dinalfos': Address(extended=True, size=1, mask=0x80),
+                'gohma_larvae': Address(extended=True, size=1, mask=0x01, pass_addr=True),
+                'shabom': Address(extended=True, size=1, mask=0x02, pass_addr=True),
+                'baby_dodongo': Address(extended=True, size=1, mask=0x04, pass_addr=True),
+                'biri_and_bari': Address(extended=True, size=1, mask=0x08, pass_addr=True),
+                'tailpasaran': Address(extended=True, size=1, mask=0x10, pass_addr=True),
+                'skulltula': Address(extended=True, size=1, mask=0x20, pass_addr=True),
+                'torch_slug': Address(extended=True, size=1, mask=0x40, pass_addr=True),
+                'moblin': Address(extended=True, size=1, mask=0x80),
+                'armos': Address(extended=True, size=1, mask=0x01, pass_addr=True),
+                'deku_baba': Address(extended=True, size=1, mask=0x02, pass_addr=True),
+                'deku_scrub': Address(extended=True, size=1, mask=0x04, pass_addr=True),
+                'bubble': Address(extended=True, size=1, mask=0x08, pass_addr=True),
+                'beamos': Address(extended=True, size=1, mask=0x10, pass_addr=True),
+                'floormaster': Address(extended=True, size=1, mask=0x20, pass_addr=True),
+                'redead_and_gibdo': Address(extended=True, size=1, mask=0x40, pass_addr=True),
+                'skullwalltula': Address(extended=True, size=1, mask=0x80),
+                'flare_dancer': Address(extended=True, size=1, mask=0x01, pass_addr=True),
+                'dead_hand': Address(extended=True, size=1, mask=0x02, pass_addr=True),
+                'shell_blade': Address(extended=True, size=1, mask=0x04, pass_addr=True),
+                'like_like': Address(extended=True, size=1, mask=0x08, pass_addr=True),
+                'spike_enemy': Address(extended=True, size=1, mask=0x10, pass_addr=True),
+                'anubis': Address(extended=True, size=1, mask=0x20, pass_addr=True),
+                'iron_knuckle': Address(extended=True, size=1, mask=0x40, pass_addr=True),
+                'skull_kid': Address(extended=True, size=1, mask=0x80),
+                'flying_pot': Address(extended=True, size=1, mask=0x01, pass_addr=True),
+                'freezard': Address(extended=True, size=1, mask=0x02, pass_addr=True),
+                'stinger': Address(extended=True, size=1, mask=0x04, pass_addr=True),
+                'wolfos': Address(extended=True, size=1, mask=0x08, pass_addr=True),
+                'guay': Address(extended=True, size=1, mask=0x10, pass_addr=True),
+                'queen_gohma': Address(extended=True, size=1, mask=0x20, pass_addr=True),
+                'king_dodongo': Address(extended=True, size=1, mask=0x40, pass_addr=True),
+                'barinade': Address(extended=True, size=1, mask=0x80),
+                'phantom_ganon': Address(extended=True, size=1, mask=0x01, pass_addr=True),
+                'volvagia': Address(extended=True, size=1, mask=0x02, pass_addr=True),
+                'morpha': Address(extended=True, size=1, mask=0x04, pass_addr=True),
+                'bongo_bongo': Address(extended=True, size=1, mask=0x08, pass_addr=True),
+                'twinrova': Address(extended=True, size=1, mask=0x10, pass_addr=True),
+                'jabu_jabu_tentacle': Address(extended=True, size=1, mask=0x20, pass_addr=True),
+                'dark_link': Address(extended=True, size=1, mask=0x40),
+                'pad_byte_1': Address(extended=True, size=1), # There are 8 bytes reserved for soul flags. Remove/add padding as required
+                'pad_byte_2': Address(extended=True, size=1)
+            },
+            'regional_enemy_spawn_flags': {
+                'deku_tree': Address(extended=True, size=1, mask=0x01, pass_addr=True, reset=8),
+                'dodongos_cavern': Address(extended=True, size=1, mask=0x02, pass_addr=True),
+                'jabu': Address(extended=True, size=1, mask=0x04, pass_addr=True),
+                'forest_temple': Address(extended=True, size=1, mask=0x08, pass_addr=True),
+                'fire_temple': Address(extended=True, size=1, mask=0x10, pass_addr=True),
+                'water_temple': Address(extended=True, size=1, mask=0x20, pass_addr=True),
+                'shadow_temple': Address(extended=True, size=1, mask=0x40, pass_addr=True),
+                'spirit_temple': Address(extended=True, size=1, mask=0x80), # 1
+                'botw': Address(extended=True, size=1, mask=0x01, pass_addr=True),
+                'ice_cavern': Address(extended=True, size=1, mask=0x02, pass_addr=True),
+                'gtg': Address(extended=True, size=1, mask=0x04, pass_addr=True),
+                'ganons_castle': Address(extended=True, size=1, mask=0x08, pass_addr=True),
+                'forest_region': Address(extended=True, size=1, mask=0x10, pass_addr=True),
+                'hyrule_field': Address(extended=True, size=1, mask=0x20, pass_addr=True),
+                'lake_hylia': Address(extended=True, size=1, mask=0x40, pass_addr=True),
+                'gerudo_region': Address(extended=True, size=1, mask=0x80), # 2
+                'market_region': Address(extended=True, size=1, mask=0x01, pass_addr=True),
+                'kakariko_region': Address(extended=True, size=1, mask=0x02, pass_addr=True),
+                'goron_region': Address(extended=True, size=1, mask=0x04, pass_addr=True),
+                'zora_region': Address(extended=True, size=1, mask=0x08, pass_addr=True),
+                'llr': Address(extended=True, size=1, mask=0x10, pass_addr=True),
+                'grottos': Address(extended=True, size=1, mask=0x20), # 3
+                'pad_byte_1': Address(extended=True, size=1), # There are 8 bytes reserved for soul flags. Remove/add padding as required
+                'pad_byte_2': Address(extended=True, size=1), # There are 8 bytes reserved for soul flags. Remove/add padding as required
+                'pad_byte_3': Address(extended=True, size=1), # There are 8 bytes reserved for soul flags. Remove/add padding as required
+                'pad_byte_4': Address(extended=True, size=1), # There are 8 bytes reserved for soul flags. Remove/add padding as required
+                'pad_byte_5': Address(extended=True, size=1), # There are 8 bytes reserved for soul flags. Remove/add padding as required
+            },
+            'enemy_spawn_enable_flag': Address(extended=True, size=8),
+            'fishing': {
+                'fishing_rod': Address(extended=True, size=1),
+                'weight_adult': Address(extended=True, size=1),
+                'weight_child': Address(extended=True, size=1),
+                'has_loach': Address(extended=True, size=1),
+            },
             'password' : Address(extended=True, size=6),
-
         }
 
     item_id_map: dict[str, int] = {
@@ -1404,6 +1517,78 @@ class SaveContext:
         'Silver Rupee (Ganons Castle Shadow Trial)':           {'silver_rupee_counts.trials_shadow': None},
         'Silver Rupee (Ganons Castle Water Trial)':            {'silver_rupee_counts.trials_water': None},
         'Silver Rupee (Ganons Castle Forest Trial)':           {'silver_rupee_counts.trials_forest': None},
+
+        'Stalfos Soul': {'enemy_spawn_flags.stalfos': None},
+        'Octorok Soul': {'enemy_spawn_flags.octorok': None},
+        'Wallmaster Soul': {'enemy_spawn_flags.wallmaster': None},
+        'Dodongo Soul': {'enemy_spawn_flags.dodongo': None},
+        'Keese Soul': {'enemy_spawn_flags.keese': None},
+        'Tektite Soul': {'enemy_spawn_flags.tektite': None},
+        'Peahat Soul': {'enemy_spawn_flags.peahat': None},
+        'Lizalfos and Dinalfos Soul': {'enemy_spawn_flags.lizalfos_and_dinalfos': None},
+        'Gohma Larvae Soul': {'enemy_spawn_flags.gohma_larvae': None},
+        'Shabom Soul': {'enemy_spawn_flags.shabom': None},
+        'Baby Dodongo Soul': {'enemy_spawn_flags.baby_dodongo': None},
+        'Biri and Bari Soul': {'enemy_spawn_flags.biri_and_bari': None},
+        'Tailpasaran Soul': {'enemy_spawn_flags.tailpasaran': None},
+        'Skulltula Soul': {'enemy_spawn_flags.skulltula': None},
+        'Torch Slug Soul': {'enemy_spawn_flags.torch_slug': None},
+        'Moblin Soul': {'enemy_spawn_flags.moblin': None},
+        'Armos Soul': {'enemy_spawn_flags.armos': None},
+        'Deku Baba Soul': {'enemy_spawn_flags.deku_baba': None},
+        'Deku Scrub Soul': {'enemy_spawn_flags.deku_scrub': None},
+        'Bubble Soul': {'enemy_spawn_flags.bubble': None},
+        'Beamos Soul': {'enemy_spawn_flags.beamos': None},
+        'Floormaster Soul': {'enemy_spawn_flags.floormaster': None},
+        'Redead and Gibdo Soul': {'enemy_spawn_flags.redead_and_gibdo': None},
+        'Skullwalltula Soul': {'enemy_spawn_flags.skullwalltula': None},
+        'Flare Dancer Soul': {'enemy_spawn_flags.flare_dancer': None},
+        'Dead hand Soul': {'enemy_spawn_flags.dead_hand': None},
+        'Shell Blade Soul': {'enemy_spawn_flags.shell_blade': None},
+        'Like Like Soul': {'enemy_spawn_flags.like_like': None},
+        'Spike Enemy Soul': {'enemy_spawn_flags.spike_enemy': None},
+        'Anubis Soul': {'enemy_spawn_flags.anubis': None},
+        'Iron Knuckle Soul': {'enemy_spawn_flags.iron_knuckle': None},
+        'Skull Kid Soul': {'enemy_spawn_flags.skull_kid': None},
+        'Flying Pot Soul': {'enemy_spawn_flags.flying_pot': None},
+        'Freezard Soul': {'enemy_spawn_flags.freezard': None},
+        'Stinger Soul': {'enemy_spawn_flags.stinger': None},
+        'Wolfos Soul': {'enemy_spawn_flags.wolfos': None},
+        'Guay Soul': {'enemy_spawn_flags.guay': None},
+        'Queen Gohma Soul': {'enemy_spawn_flags.queen_gohma': None},
+        'King Dodongo Soul': {'enemy_spawn_flags.king_dodongo': None},
+        'Barinade Soul': {'enemy_spawn_flags.barinade': None},
+        'Phantom Ganon Soul': {'enemy_spawn_flags.phantom_ganon': None},
+        'Volvagia Soul': {'enemy_spawn_flags.volvagia': None},
+        'Morpha Soul': {'enemy_spawn_flags.morpha': None},
+        'Bongo Bongo Soul': {'enemy_spawn_flags.bongo_bongo': None},
+        'Twinrova Soul': {'enemy_spawn_flags.twinrova': None},
+        'Jabu Jabu Tentacle Soul': {'enemy_spawn_flags.jabu_jabu_tentacle': None},
+        'Dark Link Soul': {'enemy_spawn_flags.dark_link': None},
+
+        'Deku Tree Souls': {'regional_enemy_spawn_flags.deku_tree': None},
+        'Dodongos Cavern Souls': {'regional_enemy_spawn_flags.dodongos_cavern': None},
+        'Jabu Jabus Belly Souls': {'regional_enemy_spawn_flags.jabu': None},
+        'Forest Temple Souls': {'regional_enemy_spawn_flags.forest_temple': None},
+        'Fire Temple Souls': {'regional_enemy_spawn_flags.fire_temple': None},
+        'Water Temple Souls': {'regional_enemy_spawn_flags.water_temple': None},
+        'Shadow Temple Souls': {'regional_enemy_spawn_flags.shadow_temple': None},
+        'Spirit Temple Souls': {'regional_enemy_spawn_flags.spirit_temple': None},
+        'Bottom of the Well Souls': {'regional_enemy_spawn_flags.botw': None},
+        'Ice Cavern Souls': {'regional_enemy_spawn_flags.ice_cavern': None},
+        'Gerudo Training Ground Souls': {'regional_enemy_spawn_flags.gtg': None},
+        'Ganons Castle Souls': {'regional_enemy_spawn_flags.ganons_castle': None},
+        'Forest Area Souls': {'regional_enemy_spawn_flags.forest_region': None},
+        'Hyrule Field Souls': {'regional_enemy_spawn_flags.hyrule_field': None},
+        'Lake Hylia Souls': {'regional_enemy_spawn_flags.lake_hylia': None},
+        'Gerudo Area Souls': {'regional_enemy_spawn_flags.gerudo_region': None},
+        'Market Area Souls': {'regional_enemy_spawn_flags.market_region': None},
+        'Kakariko Area Souls': {'regional_enemy_spawn_flags.kakariko_region': None},
+        'Goron Area Souls': {'regional_enemy_spawn_flags.goron_region': None},
+        'Zora Area Souls': {'regional_enemy_spawn_flags.zora_region': None},
+        'Lon Lon Ranch Souls': {'regional_enemy_spawn_flags.llr': None},
+        'Grottos Souls': {'regional_enemy_spawn_flags.grottos': None},
+
         # HACK: these counts aren't used since exact counts based on whether the dungeon is MQ are defined above,
         # but the entries need to be there for key rings to be valid starting items
         "Small Key Ring (Forest Temple)"          : {
@@ -1468,6 +1653,7 @@ class SaveContext:
         'Silver Rupee Pouch (Ganons Castle Shadow Trial)':           {'silver_rupee_counts.trials_shadow': 5},
         'Silver Rupee Pouch (Ganons Castle Water Trial)':            {'silver_rupee_counts.trials_water': 5},
         'Silver Rupee Pouch (Ganons Castle Forest Trial)':           {'silver_rupee_counts.trials_forest': 5},
+        'Fishing Rod':                                               {'fishing.fishing_rod': 1},
     }
 
     equipable_items: dict[str, dict[str, list[str]]] = {
@@ -1539,3 +1725,210 @@ class SaveContext:
             ],
         }
     }
+
+    def write_qol_save_context_flags(self) -> None:
+        self.write_permanent_flag(Scenes.WATER_TEMPLE, FlagType.SWITCH, 0x1, 0x01) # Water temple switch flag (Ruto)
+        self.write_permanent_flag(Scenes.HYRULE_FIELD, FlagType.SWITCH, 0x2, 0x08) # Hyrule Field switch flag (Owl)
+        self.write_permanent_flag(Scenes.KOKIRI_FOREST, FlagType.SWITCH, 0x0, 0x80) # Kokiri Forest switch flag (Owl)
+        self.write_permanent_flag(Scenes.SACRED_FOREST_MEADOW, FlagType.SWITCH, 0x2, 0x40) # Sacred Forest Meadow switch flag (Owl)
+        self.write_permanent_flag(Scenes.LOST_WOODS, FlagType.SWITCH, 0x2, 0x01) # Lost Woodsswitch flag (Owl)
+        self.write_permanent_flag(Scenes.LOST_WOODS, FlagType.SWITCH, 0x3, 0x80) # Lost Woods switch flag (Owl)
+        self.write_permanent_flag(Scenes.DESERT_COLOSSUS, FlagType.SWITCH, 0x0, 0x80) # Desert Colossus switch flag (Owl)
+        self.write_permanent_flag(Scenes.HYRULE_CASTLE, FlagType.SWITCH, 0x3, 0x20) # Hyrule Castle switch flag (Owl)
+        self.write_bits(0x0F2B, 0x20) # Spoke to Lake Hylia Owl once
+
+        self.write_bits(0x0ED4, 0x10)  # "Met Deku Tree"
+        self.write_bits(0x0ED5, 0x20)  # "Deku Tree Opened Mouth"
+        self.write_bits(0x0ED6, 0x08)  # "Rented Horse From Ingo"
+        self.write_bits(0x0ED6, 0x10)  # "Spoke to Mido After Deku Tree's Death"
+        self.write_bits(0x0EDA, 0x08)  # "Began Nabooru Battle"
+        self.write_bits(0x0EDC, 0x80)  # "Entered the Master Sword Chamber"
+        self.write_bits(0x0EE0, 0x80)  # "Spoke to Kaepora Gaebora by Lost Woods"
+        self.write_bits(0x0EE7, 0x20)  # "Nabooru Captured by Twinrova"
+        self.write_bits(0x0EE7, 0x10)  # "Spoke to Nabooru in Spirit Temple"
+        self.write_bits(0x0EED, 0x20)  # "Sheik, Spawned at Master Sword Pedestal as Adult"
+        self.write_bits(0x0EED, 0x01)  # "Nabooru Ordered to Fight by Twinrova"
+        self.write_bits(0x0EED, 0x80)  # "Watched Ganon's Tower Collapse / Caught by Gerudo"
+        self.write_bits(0x0EF9, 0x01)  # "Greeted by Saria"
+        self.write_bits(0x0F0A, 0x04)  # "Spoke to Ingo Once as Adult"
+        self.write_bits(0x0F0F, 0x40)  # "Met Poe Collector in Ruined Market"
+
+        self.write_bits(0x0ED7, 0x01)  # "Spoke to Child Malon at Castle or Market"
+        self.write_bits(0x0ED7, 0x20)  # "Spoke to Child Malon at Ranch"
+        self.write_bits(0x0ED7, 0x40)  # "Invited to Sing With Child Malon"
+        self.write_bits(0x0F09, 0x10)  # "Met Child Malon at Castle or Market"
+        self.write_bits(0x0F09, 0x20)  # "Child Malon Said Epona Was Scared of You"
+
+        self.write_bits(0x0F21, 0x04) # "Ruto in JJ (M3) Talk First Time"
+        self.write_bits(0x0F21, 0x02) # "Ruto in JJ (M2) Meet Ruto"
+
+        self.write_bits(0x0EE2, 0x01)  # "Began Ganondorf Battle"
+        self.write_bits(0x0EE3, 0x80)  # "Began Bongo Bongo Battle"
+        self.write_bits(0x0EE3, 0x40)  # "Began Barinade Battle"
+        self.write_bits(0x0EE3, 0x20)  # "Began Twinrova Battle"
+        self.write_bits(0x0EE3, 0x10)  # "Began Morpha Battle"
+        self.write_bits(0x0EE3, 0x08)  # "Began Volvagia Battle"
+        self.write_bits(0x0EE3, 0x04)  # "Began Phantom Ganon Battle"
+        self.write_bits(0x0EE3, 0x02)  # "Began King Dodongo Battle"
+        self.write_bits(0x0EE3, 0x01)  # "Began Gohma Battle"
+
+        self.write_bits(0x0EE8, 0x01)  # "Entered Deku Tree"
+        self.write_bits(0x0EE9, 0x80)  # "Entered Temple of Time"
+        self.write_bits(0x0EE9, 0x40)  # "Entered Goron City"
+        self.write_bits(0x0EE9, 0x20)  # "Entered Hyrule Castle"
+        self.write_bits(0x0EE9, 0x10)  # "Entered Zora's Domain"
+        self.write_bits(0x0EE9, 0x08)  # "Entered Kakariko Village"
+        self.write_bits(0x0EE9, 0x02)  # "Entered Death Mountain Trail"
+        self.write_bits(0x0EE9, 0x01)  # "Entered Hyrule Field"
+        self.write_bits(0x0EEA, 0x04)  # "Entered Ganon's Castle (Exterior)"
+        self.write_bits(0x0EEA, 0x02)  # "Entered Death Mountain Crater"
+        self.write_bits(0x0EEA, 0x01)  # "Entered Desert Colossus"
+        self.write_bits(0x0EEB, 0x80)  # "Entered Zora's Fountain"
+        self.write_bits(0x0EEB, 0x40)  # "Entered Graveyard"
+        self.write_bits(0x0EEB, 0x20)  # "Entered Jabu-Jabu's Belly"
+        self.write_bits(0x0EEB, 0x10)  # "Entered Lon Lon Ranch"
+        self.write_bits(0x0EEB, 0x08)  # "Entered Gerudo's Fortress"
+        self.write_bits(0x0EEB, 0x04)  # "Entered Gerudo Valley"
+        self.write_bits(0x0EEB, 0x02)  # "Entered Lake Hylia"
+        self.write_bits(0x0EEB, 0x01)  # "Entered Dodongo's Cavern"
+        self.write_bits(0x0F08, 0x08)  # "Entered Hyrule Castle"
+
+def write_settings_dependent_save_context_flags(save_context: SaveContext, world: World) -> None:
+    if not world.settings.useful_cutscenes:
+        save_context.write_bits(0x0F1A, 0x04)  # "Met Darunia in Fire Temple"
+        if 'Forest Temple' not in world.settings.dungeon_shortcuts:
+            save_context.write_permanent_flag(Scenes.FOREST_TEMPLE, FlagType.SWITCH, 0x0, 0x08)
+
+    if 'Deku Tree' in world.settings.dungeon_shortcuts:
+        # Deku Tree, flags are the same between vanilla/MQ
+        save_context.write_permanent_flag(Scenes.DEKU_TREE, FlagType.SWITCH, 0x1, 0x01)  # Deku Block down
+        save_context.write_permanent_flag(Scenes.DEKU_TREE, FlagType.CLEAR,  0x2, 0x02)  # Deku 231/312
+        save_context.write_permanent_flag(Scenes.DEKU_TREE, FlagType.SWITCH, 0x3, 0x20)  # Deku 1st Web
+        save_context.write_permanent_flag(Scenes.DEKU_TREE, FlagType.SWITCH, 0x3, 0x40)  # Deku 2nd Web
+
+    if 'Dodongos Cavern' in world.settings.dungeon_shortcuts:
+        # Dodongo's Cavern, flags are the same between vanilla/MQ
+        save_context.write_permanent_flag(Scenes.DODONGOS_CAVERN, FlagType.SWITCH, 0x3, 0x80)  # DC Entrance Mud Wall
+        save_context.write_permanent_flag(Scenes.DODONGOS_CAVERN, FlagType.SWITCH, 0x0, 0x04)  # DC Mouth
+        # Extra permanent flag in MQ for the child route
+        if world.dungeon_mq['Dodongos Cavern']:
+            save_context.write_permanent_flag(Scenes.DODONGOS_CAVERN, FlagType.SWITCH, 0x0, 0x02)  # Armos wall switch
+
+    if 'Jabu Jabus Belly' in world.settings.dungeon_shortcuts:
+        # Jabu
+        if not world.dungeon_mq['Jabu Jabus Belly']:
+            save_context.write_permanent_flag(Scenes.JABU_JABU, FlagType.SWITCH, 0x0, 0x20)  # Jabu Pathway down
+        else:
+            save_context.write_permanent_flag(Scenes.JABU_JABU, FlagType.SWITCH, 0x1, 0x20)  # Jabu Lobby Slingshot Door open
+            save_context.write_permanent_flag(Scenes.JABU_JABU, FlagType.SWITCH, 0x0, 0x20)  # Jabu Pathway down
+            save_context.write_permanent_flag(Scenes.JABU_JABU, FlagType.CLEAR,  0x2, 0x01)  # Jabu Red Slimy Thing defeated
+            save_context.write_permanent_flag(Scenes.JABU_JABU, FlagType.SWITCH, 0x2, 0x08)  # Jabu Red Slimy Thing not in front of boss lobby
+            save_context.write_permanent_flag(Scenes.JABU_JABU, FlagType.SWITCH, 0x1, 0x10)  # Jabu Boss Door Switch Activated
+
+    if 'Forest Temple' in world.settings.dungeon_shortcuts:
+        # Forest, flags are the same between vanilla/MQ
+        save_context.write_permanent_flag(Scenes.FOREST_TEMPLE, FlagType.SWITCH, 0x0, 0x10)  # Forest Elevator up
+        save_context.write_permanent_flag(Scenes.FOREST_TEMPLE, FlagType.SWITCH, 0x1, 0x01 + 0x02 + 0x04)  # Forest Basement Puzzle Done
+
+    if 'Fire Temple' in world.settings.dungeon_shortcuts:
+        # Fire, flags are the same between vanilla/MQ
+        save_context.write_permanent_flag(Scenes.FIRE_TEMPLE, FlagType.SWITCH, 0x2, 0x40)  # Fire Pillar down
+
+    if 'Spirit Temple' in world.settings.dungeon_shortcuts:
+        # Spirit
+        if not world.dungeon_mq['Spirit Temple']:
+            save_context.write_permanent_flag(Scenes.SPIRIT_TEMPLE, FlagType.SWITCH, 0x1, 0x80)  # Spirit Chains
+            save_context.write_permanent_flag(Scenes.SPIRIT_TEMPLE, FlagType.SWITCH, 0x2, 0x02 + 0x08 + 0x10)  # Spirit main room elevator (N block, Rusted Switch, E block)
+            save_context.write_permanent_flag(Scenes.SPIRIT_TEMPLE, FlagType.SWITCH, 0x3, 0x10)  # Spirit Face
+        else:
+            save_context.write_permanent_flag(Scenes.SPIRIT_TEMPLE, FlagType.SWITCH, 0x2, 0x10)  # Spirit Bombchu Boulder
+            save_context.write_permanent_flag(Scenes.SPIRIT_TEMPLE, FlagType.SWITCH, 0x2, 0x02)  # Spirit Silver Block
+            save_context.write_permanent_flag(Scenes.SPIRIT_TEMPLE, FlagType.SWITCH, 0x1, 0x80)  # Spirit Chains
+            save_context.write_permanent_flag(Scenes.SPIRIT_TEMPLE, FlagType.SWITCH, 0x3, 0x10)  # Spirit Face
+
+    if 'Shadow Temple' in world.settings.dungeon_shortcuts:
+        # Shadow
+        if not world.dungeon_mq['Shadow Temple']:
+            save_context.write_permanent_flag(Scenes.SHADOW_TEMPLE, FlagType.SWITCH, 0x0, 0x08)  # Shadow Truthspinner
+            save_context.write_permanent_flag(Scenes.SHADOW_TEMPLE, FlagType.SWITCH, 0x0, 0x20)  # Shadow Boat Block
+            save_context.write_permanent_flag(Scenes.SHADOW_TEMPLE, FlagType.SWITCH, 0x1, 0x01)  # Shadow Bird Bridge
+        else:
+            save_context.write_permanent_flag(Scenes.SHADOW_TEMPLE, FlagType.SWITCH, 0x2, 0x08)  # Shadow Truthspinner
+            save_context.write_permanent_flag(Scenes.SHADOW_TEMPLE, FlagType.SWITCH, 0x3, 0x20)  # Shadow Fire Arrow Platform
+            save_context.write_permanent_flag(Scenes.SHADOW_TEMPLE, FlagType.SWITCH, 0x3, 0x80)  # Shadow Spinning Blades room Skulltulas defeated
+            save_context.write_permanent_flag(Scenes.SHADOW_TEMPLE, FlagType.CLEAR,  0x3, 0x40)  # Shadow Spinning Blades room Skulltulas defeated
+            save_context.write_permanent_flag(Scenes.SHADOW_TEMPLE, FlagType.SWITCH, 0x0, 0x20)  # Shadow Boat Block
+            save_context.write_permanent_flag(Scenes.SHADOW_TEMPLE, FlagType.SWITCH, 0x1, 0x01)  # Shadow Bird Bridge
+
+    if world.region_has_shortcuts('King Dodongo Boss Room'):
+        save_context.write_permanent_flag(Scenes.KING_DODONGO_LOBBY, FlagType.SWITCH, 0x3, 0x02)  # DC Boss Floor
+
+    if world.settings.plant_beans:
+        save_context.write_permanent_flag(Scenes.GRAVEYARD, FlagType.SWITCH, 0x3, 0x08)  # Plant Graveyard bean
+        save_context.write_permanent_flag(Scenes.ZORAS_RIVER, FlagType.SWITCH, 0x3, 0x08)  # Plant Zora's River bean
+        save_context.write_permanent_flag(Scenes.KOKIRI_FOREST, FlagType.SWITCH, 0x2, 0x02)  # Plant Kokiri Forest bean
+        save_context.write_permanent_flag(Scenes.LAKE_HYLIA, FlagType.SWITCH, 0x3, 0x02)  # Plant Lake Hylia bean
+        save_context.write_permanent_flag(Scenes.GERUDO_VALLEY, FlagType.SWITCH, 0x3, 0x08)  # Plant Gerudo Valley bean
+        save_context.write_permanent_flag(Scenes.LOST_WOODS, FlagType.SWITCH, 0x3, 0x10)  # Plant Lost Woods bridge bean
+        save_context.write_permanent_flag(Scenes.LOST_WOODS, FlagType.SWITCH, 0x1, 0x04)  # Plant Lost Woods theater bean
+        save_context.write_permanent_flag(Scenes.DESERT_COLOSSUS, FlagType.SWITCH, 0x0, 0x1)  # Plant Desert Colossus bean
+        save_context.write_permanent_flag(Scenes.DEATH_MOUNTAIN_TRAIL, FlagType.SWITCH, 0x3, 0x40)  # Plant Death Mountain Trail bean
+        save_context.write_permanent_flag(Scenes.DEATH_MOUNTAIN_CRATER, FlagType.SWITCH, 0x3, 0x08)  # Plant Death Mountain Crater bean
+
+    if world.settings.skip_reward_from_rauru:
+        save_context.write_bits(0x0EDD, 0x20)  # "Pulled Master Sword from Pedestal"
+
+    if world.settings.ruto_already_f1_jabu and not world.dungeon_mq['Jabu Jabus Belly']:
+        save_context.write_bits(0x0F21, 0x80) # Ruto in JJ, Spawns on F1 instead of B1
+
+    if world.dungeon_mq['Shadow Temple']:
+        save_context.write_bits(0x019F, 0x80)  # "Turn On Clear Wall Blocking Hover Boots Room"
+
+    if world.skip_child_zelda:
+        if all(trade_item not in world.settings.shuffle_child_trade for trade_item in ('Weird Egg', 'Chicken')):
+            save_context.write_bits(0x0ED7, 0x04) # "Obtained Malon's Item"
+        save_context.write_bits(0x0ED7, 0x08) # "Woke Talon in castle"
+        save_context.write_bits(0x0ED7, 0x10) # "Talon has fled castle"
+        save_context.write_bits(0x0EDD, 0x01) # "Obtained Zelda's Letter"
+        save_context.write_bits(0x0EDE, 0x02) # "Learned Zelda's Lullaby"
+        save_context.write_permanent_flag(Scenes.HYRULE_CASTLE, FlagType.SWITCH, 0x3, 0x10) # "Moved crates to access the courtyard"
+    if 'Zeldas Letter' in world.distribution.starting_items:
+        if world.settings.open_kakariko != 'closed':
+            save_context.write_bits(0x0F07, 0x40)  # "Spoke to Gate Guard About Mask Shop"
+        if world.settings.complete_mask_quest:
+            save_context.write_bits(0x0F07, 0x80)  # "Soldier Wears Keaton Mask"
+            save_context.write_bits(0x0EF6, 0x8F)  # "Sold Masks & Unlocked Masks" / "Obtained Mask of Truth"
+            save_context.write_bits(0x0EE4, 0xF0)  # "Paid Back Mask Fees"
+
+    if world.skipped_trials['Forest']:
+        save_context.write_bits(0x0EEA, 0x08)  # "Completed Forest Trial"
+    if world.skipped_trials['Fire']:
+        save_context.write_bits(0x0EEA, 0x40)  # "Completed Fire Trial"
+    if world.skipped_trials['Water']:
+        save_context.write_bits(0x0EEA, 0x10)  # "Completed Water Trial"
+    if world.skipped_trials['Spirit']:
+        save_context.write_bits(0x0EE8, 0x20)  # "Completed Spirit Trial"
+    if world.skipped_trials['Shadow']:
+        save_context.write_bits(0x0EEA, 0x20)  # "Completed Shadow Trial"
+    if world.skipped_trials['Light']:
+        save_context.write_bits(0x0EEA, 0x80)  # "Completed Light Trial"
+    if world.settings.trials == 0:
+        save_context.write_bits(0x0EED, 0x08)  # "Dispelled Ganon's Tower Barrier"
+
+    if world.settings.gerudo_fortress == 'open':
+        if not world.settings.shuffle_gerudo_card:
+            save_context.write_bits(0x00A5, 0x40)  # Give Gerudo Card
+        save_context.write_bits(0x0EE7, 0x0F)  # Free all 4 carpenters
+        save_context.write_permanent_flag(Scenes.THIEVES_HIDEOUT, FlagType.SWITCH, 0x1, 0x0F)
+        save_context.write_permanent_flag(Scenes.THIEVES_HIDEOUT, FlagType.SWITCH, 0x2, 0x01)
+        save_context.write_permanent_flag(Scenes.THIEVES_HIDEOUT, FlagType.SWITCH, 0x3, 0xFE)
+        save_context.write_permanent_flag(Scenes.THIEVES_HIDEOUT, FlagType.COLLECT, 0x2, 0xD4)
+    elif world.settings.gerudo_fortress == 'fast':
+        save_context.write_bits(0x0EE7, 0x0E)  # Free 3 carpenters
+        save_context.write_permanent_flag(Scenes.THIEVES_HIDEOUT, FlagType.SWITCH, 0x1, 0x0D)
+        save_context.write_permanent_flag(Scenes.THIEVES_HIDEOUT, FlagType.SWITCH, 0x2, 0x01)
+        save_context.write_permanent_flag(Scenes.THIEVES_HIDEOUT, FlagType.SWITCH, 0x3, 0xDC)
+        save_context.write_permanent_flag(Scenes.THIEVES_HIDEOUT, FlagType.COLLECT, 0x2, 0xC4)
+
+    if world.settings.open_forest == 'open':
+        save_context.write_bits(0xED5, 0x10)  # "Showed Mido Sword & Shield"

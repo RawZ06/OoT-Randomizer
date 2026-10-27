@@ -1,6 +1,7 @@
 #include "gfx.h"
 #include "dpad.h"
 #include "trade_quests.h"
+#include "audio.h"
 
 extern uint8_t CFG_DISPLAY_DPAD;
 
@@ -9,10 +10,8 @@ extern uint8_t CFG_DISPLAY_DPAD;
 //unknown 02 is a pointer to some kind of audio configuration Always 801043A0 in my testing
 //unknown 03 is always a3 in my testing
 //unknown 04 is always a3 + 0x08 in my testing (801043A8)
-typedef void(*playsfx_t)(uint16_t sfx, z64_xyzf_t* unk_00_, int8_t unk_01_ , float* unk_02_, float* unk_03_, float* unk_04_);
 typedef void(*usebutton_t)(z64_game_t* game, z64_link_t* link, uint8_t item, uint8_t button);
 
-#define z64_playsfx   ((playsfx_t)      0x800C806C)
 #define z64_usebutton ((usebutton_t)    0x8038C9A0)
 
 void handle_dpad() {
@@ -44,14 +43,14 @@ void handle_dpad() {
                 if (z64_file.equip_boots == 2) z64_file.equip_boots = 1;
                 else z64_file.equip_boots = 2;
                 z64_UpdateEquipment(&z64_game, &z64_link);
-                z64_playsfx(0x835, (z64_xyzf_t*)0x80104394, 0x04, (float*)0x801043A0, (float*)0x801043A0, (float*)0x801043A8);
+                SFX_PLAY_CENTERED(0x835);
             }
 
             if (pad_pressed.dr && z64_file.hover_boots) {
                 if (z64_file.equip_boots == 3) z64_file.equip_boots = 1;
                 else z64_file.equip_boots = 3;
                 z64_UpdateEquipment(&z64_game, &z64_link);
-                z64_playsfx(0x835, (z64_xyzf_t*)0x80104394, 0x04, (float*)0x801043A0, (float*)0x801043A0, (float*)0x801043A8);
+                SFX_PLAY_CENTERED(0x835);
             }
         }
 
@@ -178,7 +177,7 @@ void draw_dpad_and_menu_utilities() {
         }
         sprite_draw(db, &dpad_sprite, 0, left_main_dpad, top_main_dpad, 16, 16);
 
-        // Menu dpad
+        // Menu dpad, items screen
         if (CAN_DRAW_DUNGEON_INFO && CFG_DPAD_DUNGEON_INFO_ENABLE) {
             // Zora sapphire on D-down
             sprite_load(db, &stones_sprite, 2, 1);
@@ -192,6 +191,21 @@ void draw_dpad_and_menu_utilities() {
             sprite_load(db, &quest_items_sprite, 16, 1);
             sprite_draw(db, &quest_items_sprite, 0, left_main_dpad - 11, top_main_dpad + 2, 12, 12);
 
+        }
+        // Menu dpad, map screen
+        else if (CAN_DRAW_WORLD_INFO && CFG_DPAD_DUNGEON_INFO_ENABLE) {
+            bool shuffle_dungeons = CFG_DUNGEON_BOSS_INFO[0] > 0;
+            bool shuffle_bosses = CFG_DUNGEON_BOSS_INFO[0] > 0;
+            // map on D-left
+            if (shuffle_dungeons) {
+                sprite_load(db, &quest_items_sprite, 16, 1);
+                sprite_draw(db, &quest_items_sprite, 0, left_main_dpad - 11, top_main_dpad + 2, 12, 12);
+            }
+            // boss key on D-right
+            if (shuffle_bosses) {
+                sprite_load(db, &quest_items_sprite, 14, 1);
+                sprite_draw(db, &quest_items_sprite, 0, left_main_dpad + 14, top_main_dpad + 2, 12, 12);
+            }
         } else { // Main game dpad
             if (!CAN_USE_DPAD) {
                 gDPSetPrimColor(db->p++, 0, 0, 0xFF, 0xFF, 0xFF, alpha * 0x46 / 0xFF);

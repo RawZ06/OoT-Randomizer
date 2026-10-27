@@ -49,13 +49,76 @@
 #define REGS_PER_GROUP (REG_PAGES * REGS_PER_PAGE)
 #define REG_EDITOR_DATA ((int16_t*)0x801C6EA4)
 #define BASE_REG(n, r) REG_EDITOR_DATA[(n)*REGS_PER_GROUP + (r)]
-#define REG(r) BASE_REG(0, (r))
+
+#define  REG(r) BASE_REG(0, (r))
 #define SREG(r) BASE_REG(1, (r))
+#define OREG(r) BASE_REG(2, (r))
+#define PREG(r) BASE_REG(3, (r))
+#define QREG(r) BASE_REG(4, (r))
+#define MREG(r) BASE_REG(5, (r))
+#define YREG(r) BASE_REG(6, (r))
+#define DREG(r) BASE_REG(7, (r))
+#define UREG(r) BASE_REG(8, (r))
+#define IREG(r) BASE_REG(9, (r))
+#define ZREG(r) BASE_REG(10, (r))
+#define CREG(r) BASE_REG(11, (r))
+#define NREG(r) BASE_REG(12, (r))
+#define KREG(r) BASE_REG(13, (r))
+#define XREG(r) BASE_REG(14, (r))
+#define cREG(r) BASE_REG(15, (r))
+#define sREG(r) BASE_REG(16, (r))
+#define iREG(r) BASE_REG(17, (r))
+#define WREG(r) BASE_REG(18, (r))
+#define AREG(r) BASE_REG(19, (r))
+#define VREG(r) BASE_REG(20, (r))
+#define HREG(r) BASE_REG(21, (r))
+#define GREG(r) BASE_REG(22, (r))
+#define mREG(r) BASE_REG(23, (r))
+#define nREG(r) BASE_REG(24, (r))
+#define BREG(r) BASE_REG(25, (r))
+#define dREG(r) BASE_REG(26, (r))
+#define kREG(r) BASE_REG(27, (r))
+#define bREG(r) BASE_REG(28, (r))
 #define R_PAUSE_BG_PRERENDER_STATE SREG(94)
 
 #define ITEM_ICON_WIDTH 32
 #define ITEM_ICON_HEIGHT 32
 #define ITEM_ICON_SIZE (ITEM_ICON_WIDTH * ITEM_ICON_HEIGHT * 4) // The size in bytes of an item icon
+typedef enum {
+    /* 0x00 */ HS_HBA,          // horseback archery
+    /* 0x01 */ HS_POE_POINTS,
+    /* 0x02 */ HS_FISHING,
+    /* 0x03 */ HS_HORSE_RACE,
+    /* 0x04 */ HS_MARATHON,
+    /* 0x05 */ HS_UNK_05,
+    /* 0x06 */ HS_DAMPE_RACE
+} HighScores;
+
+#define HIGH_SCORE(score) (z64_file.highScores[score])
+
+// the score value for the fishing minigame also stores many flags.
+#define HS_FISH_LENGTH_CHILD 0x7F // mask for record length of catch as child.
+#define HS_FISH_LENGTH_ADULT 0x7F000000 // mask for record length of catch as adult.
+#define HS_FISH_PLAYED_CHILD 0x100 // set when first talking to owner as child
+#define HS_FISH_PLAYED_ADULT 0x200 // set when first talking to owner as adult
+#define HS_FISH_PRIZE_CHILD 0x400 // won the Piece of Heart
+#define HS_FISH_PRIZE_ADULT 0x800 // won the Golden Scale
+#define HS_FISH_PRIZE_LOACH 0x8000 // Added by rando - hylian loach reward
+#define HS_FISH_STOLE_HAT 0x1000 // Pond owner is visibly bald as Adult Link.
+#define HS_FISH_CHEAT_CHILD 0x80 // used Sinking Lure as child to catch record fish
+#define HS_FISH_CHEAT_ADULT 0x80000000 // used Sinking Lure as adult to catch record fish
+#define HS_FISH_PLAYED 0x10000 // incremented for every play. controls weather.
+
+typedef struct Arena {
+    /* 0x00 */ struct ArenaNode* head;
+    /* 0x04 */ void* start;
+    /* 0x08 */ OSMesgQueue lockQueue;
+    /* 0x20 */ uint8_t unk_20;
+    /* 0x21 */ uint8_t isInit;
+    /* 0x22 */ uint8_t flag;
+} Arena; // size = 0x24
+
+#define GET_PLAYER(play) ((z64_link_t*)(play)->actor_list[ACTORCAT_PLAYER].first)
 
 typedef struct {
   /* index of z64_col_type in scene file */
@@ -474,6 +537,97 @@ typedef enum {
     /* 0x0C */ ACTORCAT_MAX,
 } ActorCategory;
 
+typedef enum {
+    /* 0x00 */ OCARINA_MODE_00,
+    /* 0x01 */ OCARINA_MODE_01,
+    /* 0x02 */ OCARINA_MODE_02,
+    /* 0x03 */ OCARINA_MODE_03,
+    /* 0x04 */ OCARINA_MODE_04,
+    /* 0x05 */ OCARINA_MODE_05,
+    /* 0x06 */ OCARINA_MODE_06,
+    /* 0x07 */ OCARINA_MODE_07,
+    /* 0x08 */ OCARINA_MODE_08,
+    /* 0x09 */ OCARINA_MODE_09,
+    /* 0x0A */ OCARINA_MODE_0A,
+    /* 0x0B */ OCARINA_MODE_0B,
+    /* 0x0C */ OCARINA_MODE_0C,
+    /* 0x0D */ OCARINA_MODE_0D,
+    /* 0x0E */ OCARINA_MODE_0E,
+    /* 0x0F */ OCARINA_MODE_0F
+} OcarinaMode;
+
+typedef enum {
+    /*  0 */ OCARINA_SONG_MINUET,
+    /*  1 */ OCARINA_SONG_BOLERO,
+    /*  2 */ OCARINA_SONG_SERENADE,
+    /*  3 */ OCARINA_SONG_REQUIEM,
+    /*  4 */ OCARINA_SONG_NOCTURNE,
+    /*  5 */ OCARINA_SONG_PRELUDE,
+    /*  6 */ OCARINA_SONG_SARIAS,
+    /*  7 */ OCARINA_SONG_EPONAS,
+    /*  8 */ OCARINA_SONG_LULLABY,
+    /*  9 */ OCARINA_SONG_SUNS,
+    /* 10 */ OCARINA_SONG_TIME,
+    /* 11 */ OCARINA_SONG_STORMS,
+    /* 12 */ OCARINA_SONG_SCARECROW,
+    /* 13 */ OCARINA_SONG_MEMORY_GAME,
+    /* 14 */ OCARINA_SONG_MAX,
+    /* 14 */ OCARINA_SONG_SCARECROW_LONG = OCARINA_SONG_MAX // anything larger than 13 is considered the long scarecrow's song
+} OcarinaSongId;
+
+typedef enum {
+    /* 0x00 */ OCARINA_ACTION_UNK_0, // acts like free play but never set
+    /* 0x01 */ OCARINA_ACTION_FREE_PLAY,
+    /* 0x02 */ OCARINA_ACTION_TEACH_MINUET, // Song demonstrations by teachers
+    /* 0x03 */ OCARINA_ACTION_TEACH_BOLERO,
+    /* 0x04 */ OCARINA_ACTION_TEACH_SERENADE,
+    /* 0x05 */ OCARINA_ACTION_TEACH_REQUIEM,
+    /* 0x06 */ OCARINA_ACTION_TEACH_NOCTURNE,
+    /* 0x07 */ OCARINA_ACTION_TEACH_PRELUDE,
+    /* 0x08 */ OCARINA_ACTION_TEACH_SARIA,
+    /* 0x09 */ OCARINA_ACTION_TEACH_EPONA,
+    /* 0x0A */ OCARINA_ACTION_TEACH_LULLABY,
+    /* 0x0B */ OCARINA_ACTION_TEACH_SUNS,
+    /* 0x0C */ OCARINA_ACTION_TEACH_TIME,
+    /* 0x0D */ OCARINA_ACTION_TEACH_STORMS,
+    /* 0x0E */ OCARINA_ACTION_UNK_E,
+    /* 0x0F */ OCARINA_ACTION_PLAYBACK_MINUET, // Playing back a particular song
+    /* 0x10 */ OCARINA_ACTION_PLAYBACK_BOLERO,
+    /* 0x11 */ OCARINA_ACTION_PLAYBACK_SERENADE,
+    /* 0x12 */ OCARINA_ACTION_PLAYBACK_REQUIEM,
+    /* 0x13 */ OCARINA_ACTION_PLAYBACK_NOCTURNE,
+    /* 0x14 */ OCARINA_ACTION_PLAYBACK_PRELUDE,
+    /* 0x15 */ OCARINA_ACTION_PLAYBACK_SARIA,
+    /* 0x16 */ OCARINA_ACTION_PLAYBACK_EPONA,
+    /* 0x17 */ OCARINA_ACTION_PLAYBACK_LULLABY,
+    /* 0x18 */ OCARINA_ACTION_PLAYBACK_SUNS,
+    /* 0x19 */ OCARINA_ACTION_PLAYBACK_TIME,
+    /* 0x1A */ OCARINA_ACTION_PLAYBACK_STORMS,
+    /* 0x1B */ OCARINA_ACTION_UNK_1B,
+    /* 0x1C */ OCARINA_ACTION_CHECK_MINUET, // Playing songs for check spots
+    /* 0x1D */ OCARINA_ACTION_CHECK_BOLERO,
+    /* 0x1E */ OCARINA_ACTION_CHECK_SERENADE,
+    /* 0x1F */ OCARINA_ACTION_CHECK_REQUIEM,
+    /* 0020 */ OCARINA_ACTION_CHECK_NOCTURNE,
+    /* 0x21 */ OCARINA_ACTION_CHECK_PRELUDE,
+    /* 0x22 */ OCARINA_ACTION_CHECK_SARIA,
+    /* 0x23 */ OCARINA_ACTION_CHECK_EPONA,
+    /* 0x24 */ OCARINA_ACTION_CHECK_LULLABY,
+    /* 0x25 */ OCARINA_ACTION_CHECK_SUNS,
+    /* 0x26 */ OCARINA_ACTION_CHECK_TIME,
+    /* 0x27 */ OCARINA_ACTION_CHECK_STORMS,
+    /* 0x28 */ OCARINA_ACTION_CHECK_SCARECROW, // Playing back the song as adult that was set as child
+    /* 0x29 */ OCARINA_ACTION_FREE_PLAY_DONE,
+    /* 0x2A */ OCARINA_ACTION_SCARECROW_LONG_RECORDING,
+    /* 0x2B */ OCARINA_ACTION_SCARECROW_LONG_PLAYBACK,
+    /* 0x2C */ OCARINA_ACTION_SCARECROW_RECORDING,
+    /* 0x2D */ OCARINA_ACTION_SCARECROW_PLAYBACK,
+    /* 0x2E */ OCARINA_ACTION_MEMORY_GAME,
+    /* 0x2F */ OCARINA_ACTION_FROGS,
+    /* 0x30 */ OCARINA_ACTION_CHECK_NOWARP, // Check for any of sarias - storms
+    /* 0x31 */ OCARINA_ACTION_CHECK_NOWARP_DONE
+} OcarinaSongActionIDs;
+
 typedef struct {
   char      unk_00_[0x006E];        /* 0x0000 */
   int16_t   run_speed_limit;        /* 0x006E */
@@ -750,7 +904,8 @@ typedef struct {
   uint32_t        fw_room_index;            /* 0x0E7C */
   int32_t         fw_set;                   /* 0x0E80 */
   char            unk_0C_[0x0018];          /* 0x0E84 */
-  uint8_t         gs_flags[56];             /* 0x0E9C */
+  uint8_t         gs_flags[28];             /* 0x0E9C */
+  int32_t         highScores[7];            /* 0x0EB8 */
   uint16_t        event_chk_inf[14];        /* 0x0ED4 */
   uint16_t        item_get_inf[4];          /* 0x0EF0 */
   uint16_t        inf_table[30];            /* 0x0EF8 */
@@ -971,7 +1126,7 @@ struct z64_actor_s
   z64_rot_t       rot_init;         /* 0x0014 */
   char            unk_01_[0x0002];  /* 0x001A */
   uint16_t        variable;         /* 0x001C */
-  uint8_t         alloc_index;      /* 0x001E */
+  uint8_t         obj_bank_index;   /* 0x001E */
   char            navi_tgt_dist;    /* 0x001F */
   uint16_t        sound_effect;     /* 0x0020 */
   char            unk_03_[0x0002];  /* 0x0022 */
@@ -1005,7 +1160,9 @@ struct z64_actor_s
   z64_rot_t       rot_2;            /* 0x00B4 */
   int16_t         face;             /* 0x00BA */
   float           yOffset;          /* 0x00BC */
-  char            unk_0F_[0x0040];  /* 0x00C0 */
+  char            unk_0F_[0x0024];  /* 0x00C0 */
+  Vec3f           projectedPos;     /* 0x00E4 */
+  char            unk_0F_2[0x0010]; /* 0x00F0 */
   z64_xyzf_t      pos_4;            /* 0x0100 */
   uint16_t        unk_10_;          /* 0x010C */
   uint16_t        text_id;          /* 0x010E */
@@ -1018,11 +1175,11 @@ struct z64_actor_s
   z64_actor_t    *child;            /* 0x011C */
   z64_actor_t    *prev;             /* 0x0120 */
   z64_actor_t    *next;             /* 0x0124 */
-  void           *ctor;             /* 0x0128 */
-  void           *dtor;             /* 0x012C */
-  void           *main_proc;        /* 0x0130 */
-  void           *draw_proc;        /* 0x0134 */
-  void           *code_entry;       /* 0x0138 */
+  ActorFunc      *init;             /* 0x0128 */
+  ActorFunc      *destroy;             /* 0x012C */
+  ActorFunc      *update;        /* 0x0130 */
+  ActorFunc      *draw;        /* 0x0134 */
+  ActorOverlay   *overlay_entry;       /* 0x0138 */
                                     /* 0x013C */
 };
 
@@ -1364,8 +1521,44 @@ typedef enum {
     /* 0x15 */ CAM_MODE_MAX,
 } CameraModeType;
 
-/* game context */
 typedef struct {
+    /* 0x00 */ uintptr_t    vromAddr; // VROM address (source)
+    /* 0x04 */ void*        dramAddr; // DRAM address (destination)
+    /* 0x08 */ size_t       size;     // File Transfer size
+    /* 0x0C */ const char*  filename; // Filename for debugging
+    /* 0x10 */ int32_t          line;     // Line for debugging
+    /* 0x14 */ int32_t          unk_14;
+    /* 0x18 */ OSMesgQueue* notifyQueue; // Message queue for the notification message
+    /* 0x1C */ OSMesg       notifyMsg;   // Completion notification message
+} DmaRequest; // size = 0x20
+
+typedef struct {
+    /* 0x00 */ int8_t   num;
+    /* 0x01 */ uint8_t   unk_01;
+    /* 0x02 */ uint8_t   behaviorType2;
+    /* 0x03 */ uint8_t   behaviorType1;
+    /* 0x04 */ int8_t   echo;
+    /* 0x05 */ uint8_t   lensMode;
+    /* 0x08 */ void* roomShape; // original name: "ground_shape"
+    /* 0x0C */ void* segment;
+    /* 0x10 */ char unk_10[0x4];
+} Room; // size = 0x14
+
+typedef struct {
+  /* 0x00 */ Room  curRoom;
+    /* 0x14 */ Room  prevRoom;
+    /* 0x28 */ void* bufPtrs[2];
+    /* 0x30 */ uint8_t    unk_30;
+    /* 0x31 */ int8_t    status;
+    /* 0x34 */ void* unk_34;
+    /* 0x38 */ DmaRequest dmaRequest;
+    /* 0x58 */ OSMesgQueue loadQueue;
+    /* 0x70 */ OSMesg loadMsg;
+    /* 0x74 */ int16_t unk_74[2]; // context-specific data used by the current scene draw config
+} RoomContext; // size = 0x78
+
+/* game context */
+typedef struct z64_game_t {
   z64_ctxt_t       common;                 /* 0x00000 */
   uint16_t         scene_index;            /* 0x000A4 */
   uint8_t          scene_config;           /* 0x000A6  */
@@ -1445,7 +1638,9 @@ typedef struct {
     uint16_t       rupees_keys_magic;
     uint16_t       minimap;
   }                hud_alpha_channels;    /* 0x10732 */
-  char             unk_13_[0x000C];       /* 0x10746 */
+  char             unk_13_[0x000A];       /* 0x10746 */
+  uint8_t          unk_interfacectx_260_fishing; /* 0x10750 */
+  uint8_t          unk_13_2;              /* 0x10751 */
   struct {
     uint8_t        unk_00_;
     uint8_t        b_button;
@@ -1464,15 +1659,15 @@ typedef struct {
   z64_pause_ctxt_t pause_ctxt;             /* 0x10760 */
   char             unk_15_[0x0D90];        /* 0x10A14 */
   z64_obj_ctxt_t   obj_ctxt;               /* 0x117A4 */
-  int8_t           room_index;             /* 0x11CBC */
-  char             unk_16_[0x000B];        /* 0x11CBD */
-  void            *room_ptr;               /* 0x11CC8 */
-  char             unk_17_[0x00D4];        /* 0x11CCC */
-  float            mf_11DA0[4][4];         /* 0x11DA0 */
+  RoomContext      room_ctx;               /* 0x11CBC */
+  char             unk_16_[0x14];          /* 0x11D34 */
+  int32_t          (*startPlayerFishing)(struct z64_game_t* globalCtx); /* 0x11D48*/
+  char             unk_17_2[0x0054];       /* 0x11D4C */
+  float            billboard_mtx[4][4];    /* 0x11DA0 */
   char             unk_18_[0x0004];        /* 0x11DE0 */
   uint32_t         gameplay_frames;        /* 0x11DE4 */
   uint8_t          link_age;               /* 0x11DE8 */
-  char             unk_19_;                /* 0x11DE9 */
+  char             haltAllActors;          /* 0x11DE9 */
   uint8_t          spawn_index;            /* 0x11DEA */
   uint8_t          n_map_actors;           /* 0x11DEB */
   uint8_t          n_rooms;                /* 0x11DEC */
@@ -1628,6 +1823,28 @@ typedef struct {
   z64_trail_fx_t    fx;                       /* 0x0004 */
                                               /* 0x01B0 */
 } z64_trail_t;
+
+typedef int32_t (*OverrideLimbDrawOpa)(z64_game_t* play, int32_t limbIndex, Gfx** dList, z64_xyzf_t* pos, z64_xyz_t* rot, void*);
+typedef void (*PostLimbDrawOpa)(z64_game_t* play, int32_t limbIndex, Gfx** dList, z64_xyz_t* rot, void*);
+
+
+typedef int32_t (*OverrideLimbDraw)(z64_game_t* play, int32_t limbIndex, Gfx** dList, z64_xyzf_t* pos, z64_xyz_t* rot, void*,
+                                Gfx** gfx);
+typedef void (*PostLimbDraw)(z64_game_t* play, int32_t limbIndex, Gfx** dList, z64_xyz_t* rot, void*, Gfx** gfx);
+
+typedef enum {
+    /*  0 */ TEXT_STATE_NONE,
+    /*  1 */ TEXT_STATE_DONE_HAS_NEXT,
+    /*  2 */ TEXT_STATE_CLOSING,
+    /*  3 */ TEXT_STATE_DONE_FADING,
+    /*  4 */ TEXT_STATE_CHOICE,
+    /*  5 */ TEXT_STATE_EVENT,
+    /*  6 */ TEXT_STATE_DONE,
+    /*  7 */ TEXT_STATE_SONG_DEMO_DONE,
+    /*  8 */ TEXT_STATE_8,
+    /*  9 */ TEXT_STATE_9,
+    /* 10 */ TEXT_STATE_AWAITING_NEXT
+} TextState;
 
 typedef enum {
     /* 0x00 */ ITEM00_RUPEE_GREEN,
@@ -1917,10 +2134,9 @@ typedef enum {
     /* 4 */ PAUSE_BG_PRERENDER_MAX,
 } PauseBgPreRenderState;
 
-
-
 /* helper macros */
 #define LINK_IS_ADULT (z64_file.link_age == 0)
+#define LINK_IS_CHILD (z64_file.link_age == 1)
 #define SLOT(item) gItemSlots[item]
 #define INV_CONTENT(item) z64_file.items[SLOT(item)]
 #define ABS(x) ((x) >= 0 ? (x) : -(x))
@@ -1928,13 +2144,8 @@ typedef enum {
 /* dram addresses */
 #define z64_EnItem00Action_addr                 0x800127E0
 #define z64_ActorKill_addr                      0x80020EB4
-#define z64_Message_GetState_addr               0x800DD464
 #define z64_SetCollectibleFlags_addr            0x8002071C
 #define z64_GetCollectibleFlags_addr            0x800206E8
-#define z64_Flags_GetClear_addr                 0x80020640
-#define z64_Flags_SetSwitch_addr                0x800204D0
-#define z64_Flags_GetSwitch_addr                0x8002049C
-#define z64_Audio_PlaySoundGeneral_addr         0x800C806C
 #define z64_PlaySFXID_addr                      0x800646F0
 #define z64_Audio_PlayFanFare_addr              0x800C69A0
 #define z64_osSendMesg_addr                     0x80001E20
@@ -1951,8 +2162,6 @@ typedef enum {
 #define z64_UpdateItemButton_addr               0x8006FB50
 #define z64_GiveItem_addr                       0x8006FDCC
 #define z64_UpdateEquipment_addr                0x80079764
-#define z64_LoadRoom_addr                       0x80080A3C
-#define z64_UnloadRoom_addr                     0x80080C98
 #define z64_Io_addr                             0x80091474
 #define z64_entrance_offset_hook_addr           0x8009AA44
 #define z64_frame_update_func_addr              0x8009AF1C
@@ -1988,23 +2197,18 @@ typedef enum {
 #define z64_LinkInvincibility_addr              0x8038E578
 #define z64_LinkDamage_addr                     0x8038E6A8
 #define z64_ObjectSpawn_addr                    0x800812F0
-#define z64_ObjectIndex_addr                    0x80081628
 #define z64_ObjectIsLoaded_addr                 0x80081688
 #define z64_ActorOfferGetItem_addr              0x80022BD4
 #define z64_ActorHasParent_addr                 0x80022BB0
 #define SsSram_ReadWrite_addr                   0x80091474
 #define z64_memcopy_addr                        0x80057030
 #define z64_bzero_addr                          0x80002E80
-#define z64_Item_DropCollectible_addr           0x80013678
-#define z64_Item_DropCollectible2_addr          0x800138B0
-#define z64_Item_DropCollectibleRandom_addr     0x80013A84
 #define z64_Gfx_DrawDListOpa_addr               0x80028048
 #define z64_Math_SinS_addr                      0x800636C4
 #define z64_RandSeed_addr                       0x800CDCC0
 #define z64_Rand_ZeroOne_addr                   0x800CDCCC
 #define Interface_LoadItemIcon1_addr            0x8006FB50
 #define Rupees_ChangeBy_addr                    0x800721CC
-#define Message_ContinueTextbox_addr            0x800DCE80
 #define PlaySFX_addr                            0x800646F0
 #define z64_ScalePitchAndTempo_addr             0x800C64A0
 #define Font_LoadChar_addr                      0x8005BCE4
@@ -2036,13 +2240,8 @@ typedef enum {
 
 /* function prototypes */
 typedef void(*z64_ActorKillFunc)(z64_actor_t*);
-typedef uint8_t(*z64_Message_GetStateFunc)(uint8_t*);
 typedef void(*z64_Flags_SetCollectibleFunc)(z64_game_t* game, uint32_t flag);
 typedef int32_t (*z64_Flags_GetCollectibleFunc)(z64_game_t* game, uint32_t flag);
-typedef void(*z64_Audio_PlaySoundGeneralFunc)(uint16_t sfxId, void* pos, uint8_t token, float* freqScale, float* a4, uint8_t* reverbAdd);
-typedef int32_t (*z64_Flags_GetClearFunc)(z64_game_t* game, int32_t flag);
-typedef void (*z64_Flags_SetSwitchFunc)(z64_game_t* game, int32_t flag);
-typedef int32_t (*z64_Flags_GetSwitchFunc)(z64_game_t* game, int32_t flag);
 typedef void(*z64_PlaySFXIDFunc)(int16_t sfxId);
 typedef void(*z64_Audio_PlayFanFareFunc)(uint16_t);
 typedef void (*z64_DrawActors_proc)       (z64_game_t* game, void* actor_ctxt);
@@ -2055,16 +2254,11 @@ typedef z64_actor_t* (*z64_SpawnActor_proc)       (void* actor_ctxt, z64_game_t*
 typedef void (*z64_SwitchAgeEquips_proc)  (void);
 typedef void (*z64_UpdateItemButton_proc) (z64_game_t* game, int button_index);
 typedef void (*z64_UpdateEquipment_proc)  (z64_game_t* game, z64_link_t* link);
-typedef void (*z64_LoadRoom_proc)         (z64_game_t* game,
-                                           void* p_ctxt_room_index,
-                                           uint8_t room_index);
-typedef void (*z64_UnloadRoom_proc)       (z64_game_t* game,
-                                           void* p_ctxt_room_index);
 typedef void (*z64_Io_proc)               (uint32_t dev_addr, void* dram_addr,
                                            uint32_t size, int32_t direction);
 typedef void (*z64_SceneConfig_proc)      (z64_game_t* game);
 typedef void (*z64_DisplayTextbox_proc)   (z64_game_t* game, uint16_t text_id,
-                                           int unknown_);
+                                           z64_actor_t* unknown_);
 typedef void (*z64_GiveItem_proc)         (z64_game_t* game, uint8_t item);
 
 typedef void(*z64_LinkDamage_proc)        (z64_game_t* ctxt, z64_link_t* link,
@@ -2080,7 +2274,6 @@ typedef float (*z64_Math_SinS_proc)(int16_t angle);
 typedef void (*z64_EffectSsKiraKira_SpawnSmall_proc)(z64_game_t* globalCtx, z64_xyzf_t* pos, z64_xyzf_t* velocity, z64_xyzf_t* accel, colorRGBA8_t* primColor, colorRGBA8_t* envColor);
 
 typedef int32_t(*z64_ObjectSpawn_proc)    (z64_obj_ctxt_t* object_ctx, int16_t object_id);
-typedef int32_t(*z64_ObjectIndex_proc)    (z64_obj_ctxt_t* object_ctx, int16_t object_id);
 typedef int32_t(*z64_ObjectIsLoaded_proc) (z64_obj_ctxt_t* object_ctx, int32_t bank_index);
 
 typedef int32_t (*z64_ActorHasParent_proc)(z64_actor_t* actor, z64_game_t* game);
@@ -2092,8 +2285,6 @@ typedef void(*Font_LoadChar_proc)(void* font, uint8_t character, uint16_t codePo
 typedef void(*Interface_LoadItemIcon1_proc) (z64_game_t* game, uint16_t button);
 
 typedef void(*Rupees_ChangeBy_proc)         (int16_t rupeeChange);
-
-typedef void(*Message_ContinueTextbox_proc) (z64_game_t* play, uint16_t textId);
 
 typedef void(*PlaySFX_proc) (uint16_t sfxId);
 typedef void(*z64_ScalePitchAndTempo_proc)(float scaleTempoAndFreq, uint8_t duration);
@@ -2130,13 +2321,8 @@ typedef void(*z64_Play_SetupRespawnPoint_proc)(z64_game_t *game, int32_t respawn
 
 /* functions */
 #define z64_ActorKill               ((z64_ActorKillFunc)    z64_ActorKill_addr)
-#define z64_MessageGetState         ((z64_Message_GetStateFunc)z64_Message_GetState_addr)
 #define z64_SetCollectibleFlags     ((z64_Flags_SetCollectibleFunc)z64_SetCollectibleFlags_addr)
 #define z64_Flags_GetCollectible    ((z64_Flags_GetCollectibleFunc)z64_GetCollectibleFlags_addr)
-#define z64_Flags_GetClear          ((z64_Flags_GetClearFunc)z64_Flags_GetClear_addr)
-#define z64_Flags_SetSwitch         ((z64_Flags_SetSwitchFunc)z64_Flags_SetSwitch_addr)
-#define z64_Flags_GetSwitch         ((z64_Flags_GetSwitchFunc)z64_Flags_GetSwitch_addr)
-#define z64_Audio_PlaySoundGeneral  ((z64_Audio_PlaySoundGeneralFunc)z64_Audio_PlaySoundGeneral_addr)
 #define z64_Audio_PlayFanFare       ((z64_Audio_PlayFanFareFunc)z64_Audio_PlayFanFare_addr)
 #define z64_PlaySFXID               ((z64_PlaySFXIDFunc)z64_PlaySFXID_addr)
 #define z64_osSendMesg          ((osSendMesg_t)       z64_osSendMesg_addr)
@@ -2153,9 +2339,6 @@ typedef void(*z64_Play_SetupRespawnPoint_proc)(z64_game_t *game, int32_t respawn
                                                       z64_UpdateItemButton_addr)
 #define z64_UpdateEquipment     ((z64_UpdateEquipment_proc)                   \
                                                       z64_UpdateEquipment_addr)
-#define z64_LoadRoom            ((z64_LoadRoom_proc)  z64_LoadRoom_addr)
-#define z64_UnloadRoom          ((z64_UnloadRoom_proc)                        \
-                                                      z64_UnloadRoom_addr)
 #define z64_Io                  ((z64_Io_proc)        z64_Io_addr)
 #define z64_DisplayTextbox      ((z64_DisplayTextbox_proc)                    \
                                                       z64_DisplayTextbox_addr)
@@ -2170,7 +2353,6 @@ typedef void(*z64_Play_SetupRespawnPoint_proc)(z64_game_t *game, int32_t respawn
 #define z64_Rand_ZeroOne        ((z64_Rand_ZeroOne_proc)z64_Rand_ZeroOne_addr)
 
 #define z64_ObjectSpawn         ((z64_ObjectSpawn_proc)z64_ObjectSpawn_addr)
-#define z64_ObjectIndex         ((z64_ObjectIndex_proc)z64_ObjectIndex_addr)
 #define z64_ObjectIsLoaded      ((z64_ObjectIsLoaded_proc)z64_ObjectIsLoaded_addr)
 
 #define z64_ActorHasParent ((z64_ActorHasParent_proc)z64_ActorHasParent_addr)
@@ -2178,9 +2360,6 @@ typedef void(*z64_Play_SetupRespawnPoint_proc)(z64_game_t *game, int32_t respawn
 #define SsSram_ReadWrite ((SsSram_ReadWrite_proc)SsSram_ReadWrite_addr)
 #define z64_memcopy ((z64_memcopy_proc)z64_memcopy_addr)
 #define z64_bzero ((z64_bzero_proc)z64_bzero_addr)
-#define z64_Item_DropCollectible ((z64_Item_DropCollectible_proc)z64_Item_DropCollectible_addr)
-#define z64_Item_DropCollectible2 ((z64_Item_DropCollectible_proc)z64_Item_DropCollectible2_addr)
-#define z64_Item_DropCollectibleRandom ((z64_Item_DropCollectibleRandom_proc)z64_Item_DropCollectibleRandom_addr)
 #define z64_Gfx_DrawDListOpa ((z64_Gfx_DrawDListOpa_proc)z64_Gfx_DrawDListOpa_addr)
 #define z64_Math_SinS ((z64_Math_SinS_proc)z64_Math_SinS_addr)
 #define z64_Rand_ZeroOne ((z64_Rand_ZeroOne_proc)z64_Rand_ZeroOne_addr)
@@ -2189,7 +2368,6 @@ typedef void(*z64_Play_SetupRespawnPoint_proc)(z64_game_t *game, int32_t respawn
 
 #define Rupees_ChangeBy         ((Rupees_ChangeBy_proc)Rupees_ChangeBy_addr)
 
-#define Message_ContinueTextbox ((Message_ContinueTextbox_proc)Message_ContinueTextbox_addr)
 #define z64_ScalePitchAndTempo        ((z64_ScalePitchAndTempo_proc)z64_ScalePitchAndTempo_addr)
 #define z64_Audio_GetActiveSeqId ((z64_Audio_GetActiveSeqId_proc)z64_Audio_GetActiveSeqId_addr)
 #define z64_Play_SetupRespawnPoint ((z64_Play_SetupRespawnPoint_proc)z64_Play_SetupRespawnPoint_addr)
@@ -2197,6 +2375,7 @@ typedef void(*z64_Play_SetupRespawnPoint_proc)(z64_game_t *game, int32_t respawn
 #define PlaySFX ((PlaySFX_proc)PlaySFX_addr)
 #define Font_LoadChar ((Font_LoadChar_proc)Font_LoadChar_addr)
 #define GetItem_Draw            ((GetItem_Draw_proc)GetItem_Draw_addr)
+#define z64_EffectSsKiraKira_SpawnSmall ((z64_EffectSsKiraKira_SpawnSmall_proc)z64_EffectSsKiraKira_SpawnSmall_addr)
 
 /* macros */
 #define GET_ITEMGETINF(flag) (z64_file.item_get_inf[(flag) >> 4] & (1 << ((flag) & 0xF)))
@@ -2464,5 +2643,38 @@ typedef void(*z64_Play_SetupRespawnPoint_proc)(z64_game_t *game, int32_t respawn
 
 extern void Fault_AddHungupAndCrashImpl(const char* msg1, const char* msg2);
 extern int32_t sprintf(char* dst, char* fmt, ...);
+extern z64_actor_t* z64_ActorFind(void* actorCtx, int32_t actorId, int32_t actorCategory);
+extern int32_t DmaMgr_RequestSync(void* ram, uint32_t* vrom, unsigned long size);
+extern Gfx* SkelAnime_Draw(z64_game_t* play, void** skeleton, z64_xyz_t* jointTable, OverrideLimbDraw overrideLimbDraw, PostLimbDraw postLimbDraw, void* arg, Gfx* gfx);
+extern void SkelAnime_DrawFlexOpa(z64_game_t* globalCtx, void** skeleton, z64_xyz_t* jointTable, int32_t dListCount, OverrideLimbDrawOpa overrideLimbDraw, PostLimbDrawOpa postLimbDraw, void* this);
+extern int32_t Actor_TalkOfferAccepted(z64_actor_t* actor, z64_game_t* globalCtx);
+extern int32_t Actor_OfferTalk(z64_actor_t* actor, z64_game_t* globalCtx, float radius);
+extern uint8_t Message_GetState(MessageContext* msgCtx);
+extern uint8_t Message_ShouldAdvance(z64_game_t* globalCtx);
+extern void Message_ContinueTextbox(z64_game_t* globalCtx, uint16_t text_id);
+extern void Message_CloseTextbox(z64_game_t* globalCtx);
+extern int32_t Actor_OfferGetItem(z64_actor_t* actor, z64_game_t* globalCtx, int32_t getItemId, float xzRange, float yRange);
+extern int32_t Object_IsLoaded(z64_obj_ctxt_t* objectCtx, int32_t bankIndex);
+extern int32_t Object_GetIndex(z64_obj_ctxt_t* objectCtx, int32_t object_id);
+extern void Actor_SetObjectDependency(z64_game_t* globalCtx, z64_actor_t* actor);
+extern void Scene_CommandObjectList(z64_game_t* globalCtx, void* scene_command);
+extern void Room_Change(z64_game_t* globalCtx, void* roomCtx);
+extern void __osMallocInit(Arena* arena, void* start, uint32_t size);
+extern void __osFree(Arena* arena, void* ptr);
+extern void* __osMalloc(Arena* arena, uint32_t size);
+extern void z64_LoadRoom(z64_game_t *game, void *p_ctxt_room_index, uint8_t room_index);
+extern void z64_UnloadRoom(z64_game_t *game, void *p_ctxt_room_index);
+extern z64_actor_t * Actor_SpawnAsChild(void* actorCtx, z64_actor_t* parent, z64_game_t* globalCtx, int16_t actorId, float posX, float posY, float posZ, int16_t rotX, int16_t rotY, int16_t rotZ, int16_t params);
+
+extern uintptr_t z64_segments[16];
+extern int32_t z64_Flags_GetClear(z64_game_t* globalCtx, int32_t flag);
+extern void z64_Flags_SetSwitch(z64_game_t* globalCtx, int32_t flag);
+extern int32_t z64_Flags_GetSwitch(z64_game_t* globalCtx, int32_t flag);
+extern void z64_Flags_SetTempClear(z64_game_t* globalCtx, int32_t flag);
+extern int32_t CutsceneFlags_Get(void* play, int16_t flag);
+extern int32_t DemoKankyo_CutsceneFlags_Get_Hook(void* play, int16_t flag);
+extern void Magic_Fill(z64_game_t* play);
+extern int32_t Health_ChangeBy(z64_game_t* play, int16_t amount);
+
 
 #endif

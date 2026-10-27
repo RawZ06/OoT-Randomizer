@@ -3,13 +3,18 @@ from collections.abc import Iterable
 from typing import TYPE_CHECKING, Optional, Any
 
 from Item import Item, ItemInfo
-from RulesCommon import escape_name
+from Location import Location
+from RulesCommon import AccessRule, escape_name
+from Boulders import BOULDER_TYPE
 
 if TYPE_CHECKING:
     from Goals import GoalCategory, Goal
     from Location import Location
     from Search import Search
     from World import World
+    from RulesCommon import AccessRule
+
+from Scene import get_scene_group, scene_groups, scene_list
 
 Triforce_Piece: int = ItemInfo.solver_ids['Triforce_Piece']
 Triforce: int = ItemInfo.solver_ids['Triforce']
@@ -22,11 +27,21 @@ Ocarina_C_up_Button: int = ItemInfo.solver_ids['Ocarina_C_up_Button']
 Ocarina_C_down_Button: int = ItemInfo.solver_ids['Ocarina_C_down_Button']
 Ocarina_C_right_Button: int = ItemInfo.solver_ids['Ocarina_C_right_Button']
 
+Megaton_Hammer: int = ItemInfo.solver_ids['Megaton_Hammer']
+Progressive_Strength_Upgrade: int = ItemInfo.solver_ids['Progressive_Strength_Upgrade']
+Bomb_Bag: int = ItemInfo.solver_ids['Bomb_Bag']
+Nayrus_Love: int = ItemInfo.solver_ids['Nayrus_Love']
+Magic_Meter: int = ItemInfo.solver_ids['Magic_Meter']
+
 class State:
     def __init__(self, parent: World) -> None:
         self.solv_items: list[int] = [0] * len(ItemInfo.solver_ids)
         self.world: World = parent
         self.search: Optional[Search] = None
+
+        self.can_blast_or_smash: AccessRule = self.world.parser.parse_rule("can_blast_or_smash")
+        self.Blue_Fire: AccessRule = self.world.parser.parse_rule("Blue_Fire")
+        self.Fairy: AccessRule = self.world.parser.parse_rule("Fairy")
 
     def copy(self, new_world: Optional[World] = None) -> State:
         new_world = new_world if new_world else self.world
@@ -78,47 +93,46 @@ class State:
         # Extra Ruto's Letter are automatically emptied
         return self.has_any_of(ItemInfo.bottle_ids) or self.has(Rutos_Letter, 2)
 
-    def has_hearts(self, count: int) -> bool:
+    def has_hearts(self, count: int, **kwargs) -> bool:
         # Warning: This is limited by World.max_progressions so it currently only works if hearts are required for LACS, bridge, or Ganon bk
         return self.heart_count() >= count
 
-    def heart_count(self) -> int:
+    def heart_count(self, **kwargs) -> int:
         # Warning: This is limited by World.max_progressions so it currently only works if hearts are required for LACS, bridge, or Ganon bk
         return (
             self.item_count(Piece_of_Heart) // 4 # aliases ensure Heart Container and Piece of Heart (Treasure Chest Game) are included in this
             + 3 # starting hearts
         )
 
-    def has_medallions(self, count: int) -> bool:
+    def has_medallions(self, count: int, **kwargs) -> bool:
         return self.count_distinct(ItemInfo.medallion_ids) >= count
 
-    def has_stones(self, count: int) -> bool:
+    def has_stones(self, count: int, **kwargs) -> bool:
         return self.count_distinct(ItemInfo.stone_ids) >= count
 
+    def has_dungeon_rewards(self, count: int, **kwargs) -> bool:
+        return (self.count_distinct(ItemInfo.medallion_ids) + self.count_distinct(ItemInfo.stone_ids)) >= count
 
-    def has_dungeon_rewards(self, count: int) -> bool:
-        return self.count_distinct(ItemInfo.medallion_ids) + self.count_distinct(ItemInfo.stone_ids) >= count
-
-    def has_ocarina_buttons(self, count: int) -> bool:
-        return self.count_distinct(ItemInfo.ocarina_buttons_ids) >= count
+    def has_ocarina_buttons(self, count: int, **kwargs) -> bool:
+        return (self.count_distinct(ItemInfo.ocarina_buttons_ids)) >= count
 
     # TODO: Store the item's solver id in the goal
-    def has_item_goal(self, item_goal: dict[str, Any]) -> bool:
+    def has_item_goal(self, item_goal: dict[str, Any], **kwargs) -> bool:
         return self.solv_items[ItemInfo.solver_ids[escape_name(item_goal['name'])]] >= item_goal['minimum']
 
-    def has_full_item_goal(self, category: GoalCategory, goal: Goal, item_goal: dict[str, Any]) -> bool:
+    def has_full_item_goal(self, category: GoalCategory, goal: Goal, item_goal: dict[str, Any], **kwargs) -> bool:
         local_goal = self.world.goal_categories[category.name].get_goal(goal.name)
         per_world_max_quantity = local_goal.get_item(item_goal['name'])['quantity']
         return self.solv_items[ItemInfo.solver_ids[escape_name(item_goal['name'])]] >= per_world_max_quantity
 
-    def has_all_item_goals(self) -> bool:
+    def has_all_item_goals(self, **kwargs) -> bool:
         for category in self.world.goal_categories.values():
             for goal in category.goals:
                 if not all(map(lambda i: self.has_full_item_goal(category, goal, i), goal.items)):
                     return False
         return True
 
-    def had_night_start(self) -> bool:
+    def had_night_start(self, **kwargs) -> bool:
         stod = self.world.settings.starting_tod
         # These are all not between 6:30 and 18:00
         if (stod == 'sunset' or         # 18
@@ -130,14 +144,23 @@ class State:
             return False
 
     # Used for fall damage and other situations where damage is unavoidable
-    def can_live_dmg(self, hearts: int) -> bool:
+    def can_live_dmg(self, hearts: float, allow_revive: bool = True, allow_nayrus: bool = True, **kwargs) -> bool:
         mult = self.world.settings.damage_multiplier
-        if hearts*4 >= 3:
-            return mult != 'ohko' and mult != 'quadruple'
-        elif hearts*4 < 3:
-            return mult != 'ohko'
+        nl = self.has(Nayrus_Love) and self.has(Magic_Meter) and allow_nayrus
+        fairy = self.Fairy(self) and allow_revive
+        if mult == 'ohko':
+            return fairy or nl
+        elif mult == 'quad':
+            return (hearts < 0.75) or fairy or nl
+        elif mult == 'double':
+            return (hearts < 1.5) or fairy or nl
+        elif mult == 'normal':
+            return (hearts < 3) or fairy or nl
+        elif mult == 'half':
+            return (hearts < 6) or fairy or nl
         else:
-            return True
+            return False
+
 
     # Use the guarantee_hint rule defined in json.
     def guarantee_hint(self) -> bool:
@@ -174,13 +197,39 @@ class State:
         if self.solv_items[item.solver_id] > 0:
             self.solv_items[item.solver_id] -= 1
 
-    def region_has_shortcuts(self, region_name: str) -> bool:
+    def region_has_shortcuts(self, region_name: str, **kwargs) -> bool:
         return self.world.region_has_shortcuts(region_name)
 
-    def has_all_notes_for_song(self, song: str) -> bool:
+    def has_soul(self, enemy: str, **kwargs) -> bool:
+        # Get the spot (this can be a location, an entrance (region transition), or an Event)
+        spot = kwargs['spot']
+
+        if self.world.settings.shuffle_enemy_spawns == 'regional': # Regional soul shuffle so determine the region soul from the spot's parent region's scene
+            scene = None
+            # Other types of locations we need to be a bit creative
+            # All regions should be marked with either a scene or a dungeon
+            # We can resolve the scene id from those hopefully
+            if type(spot) is Location and spot.scene == 62: # Grotto locations
+                scene = "Grottos"
+            elif spot.parent_region.dungeon:
+                scene = spot.parent_region.dungeon.name
+            elif type(spot) is Location and spot.scene and spot.scene != 0xFF and spot.scene != 62: # For actual item locations we can get the scene from the location directly
+                scene = scene_list[spot.scene]
+            elif spot.parent_region.scene:
+                scene = spot.parent_region.scene
+            if scene is not None:
+                # We have a scene name so loop through our scene groups
+                group = get_scene_group(scene)
+            soul_str = group + " Souls"
+            return self.has(ItemInfo.solver_ids[escape_name(soul_str)])
+        else:
+            soul_str = enemy + " Soul"
+        return (not self.world.shuffle_enemy_spawns or self.has(ItemInfo.solver_ids[escape_name(soul_str)]))
+
+    def has_all_notes_for_song(self, song: str, **kwargs) -> bool:
         # Scarecrow needs 2 different notes
         if song == 'Scarecrow Song':
-            return self.world.settings.free_scarecrow or self.has_ocarina_buttons(2)
+            return self.world.settings.scarecrow_behavior == 'free' or self.has_ocarina_buttons(2)
 
         notes = str(self.world.song_notes[song])
         if 'A' in notes:
@@ -215,3 +264,37 @@ class State:
                 for event in self.world.event_items
                 if self.solv_items[ItemInfo.solver_ids[event]]},
         }
+
+    def boulder_type(self, boulder: str, **kwargs) -> BOULDER_TYPE:
+        return self.world.boulders[boulder]
+
+    def can_pass_boulder(self, boulder: str, age: str, **kwargs) -> bool:
+        type: BOULDER_TYPE = self.world.boulders[boulder]
+        return self.can_pass_boulder_type(type, age, kwargs=kwargs)
+
+    def can_pass_boulder_type(self, boulder_type:BOULDER_TYPE, age: str, **kwargs) -> bool:
+        if boulder_type == BOULDER_TYPE.BRONZE:
+            # Check for hammer and adult
+            return age == 'adult' and self.has(Megaton_Hammer)
+        elif boulder_type == BOULDER_TYPE.SILVER:
+            # Check for adult+str2
+            return age == 'adult' and self.has(Progressive_Strength_Upgrade, 2)
+        elif boulder_type == BOULDER_TYPE.GOLD:
+            return age == 'adult' and self.has(Progressive_Strength_Upgrade, 3)
+        elif boulder_type == BOULDER_TYPE.BROWN:
+            # Check for adult+hammer or explosives
+            return self.can_blast_or_smash(self, age=age)
+        elif boulder_type == BOULDER_TYPE.RED_ICE:
+            # Check for blue fire
+            #return self.world.parser.parse_rule('Blue_Fire')(self, age=age)
+            return self.Blue_Fire(self, age=age)
+
+        # Should never get here
+        return False
+
+    # Check if the current state can pass a particular boulder, restricted to a list of types
+    def can_pass_boulder_types(self, boulder: str, types: list[BOULDER_TYPE], age: str, **kwargs) -> bool:
+        this_boulder_type: BOULDER_TYPE = self.world.boulders[boulder] # Get the boulder's type
+        if this_boulder_type in types: # Check if that type is in the list of allowed types
+            return self.can_pass_boulder_type(this_boulder_type, age, kwargs=kwargs) # Check ability to pass that type
+        return False

@@ -2,12 +2,564 @@
 
 This is a randomizer for _The Legend of Zelda: Ocarina of Time_ for the Nintendo 64.
 
+WARNING: This branch is a modified version of the randomizer. It is not officially supported and may be very unstable. Please refrain from asking questions and from reporting issues in the main Randomizer Discord when using this branch. Instead, you can open an issue on this fork here or contact me directly on discord (RealRob) for any help, report or request.
+
+This branch is based of of Roman971's fork of the randomizer and usually kept up to date with the latest changes in the main Dev fork, with the addition of the following developmental features:
+
+Enemy Drop Shuffle - All (almost) of the enemies in the game will give a shuffled item when killed.
+Wonderitem Shuffle - Shuffles wonderitems - which include invisible rupees and invisible hit markers.
+Gossip Stone Shuffle - Play Song of Time to a gossip stone to receive a shuffled item.
+Enemy Soul Shuffle - Shuffles enemy "souls" into the item pool. Enemies will not spawn into the world until their souls have been collected.
+Grass Shuffle - Shuffles grass
+Fishing Game Shuffle - Shuffle the fish from the fishing game. The fish in the pond become items that you will collect upon catching. 
+    The fish themselves are shuffled as items that must be collected throughout the world. .
+    Finding a 10 lb (child) 16 lb (adult) and a hylian loach may be turned in to the pond owner for a reward.
+    The fishing rod becomes an item shuffled into the world which must be found before you can fish in the pond.
+
+## Index
+
 * [Installation](#installation)
 * [General Description](#general-description)
   * [Getting Stuck](#getting-stuck)
   * [Settings](#settings)
   * [Known Issues](#known-issues)
 * [Changelog](#changelog)
+
+## RealRob Changelog
+### 9.0.2.Rob-17
+  * Fix DMT Cow Grotto Song of Storms Fairy and LW Scrubs Grotto Suns Song Fairy incorrect location type
+
+### 9.0.2.Rob-16
+  * Fix HF Deku Scrub Grotto Song of Storms Fairy incorrect location type
+
+### 9.0.2.Rob-15
+  * Add Fairy Shuffle to Advanced logic
+
+### 9.0.2.Rob-14
+  * Add grass to advanced logic files
+  * Disable unsupported settings in advanced logic
+
+### 9.0.2.Rob-13
+  * Increase override table size
+
+### 9.0.2.Rob-12
+  * Fix "Random" custom voice selection crashing generation
+
+### 9.0.2.Rob-11
+  * Fix graveyard night time bean plant fairies not shuffled.
+  * Fix BOTW MQ Suns Song spots not shuffled.
+
+### 9.0.2.Rob-10
+  * Fix default value for shuffle_fairies
+
+### 9.0.2.Rob-9
+  * Make different fairy types individually shufflable
+
+### 9.0.2.Rob-8
+  * Add bean plant fairies to fairy shuffle
+
+### 9.0.2.Rob-7
+  * Fix fairies giving duplicate items
+
+### 9.0.2.Rob-6
+  * Fix crash when collecting fairy on the same frame that they are spawned
+  * Hopefully fix text IDs for fairies
+
+### 9.0.2.Rob-5
+  * Fix fairy progressive models
+
+### 9.0.2.Rob-4
+  * Fix Grotto ER + Fairies
+
+### 9.0.2.Rob-3
+  * Add MQ Suns/Storms spot fairies
+
+### 9.0.2.Rob-2
+  * Fix mixed pools + dungeons ER + new maps/compass setting
+
+### 9.0.2.Rob-1
+  * Update to main dev 9.0.2
+  * Add custom voice pack support
+  * New setting - Fairy Shuffle. Replaces Gossip Stone Shuffle
+
+### 8.3.56.Rob-4
+  * Ok you can nut again
+
+### 8.3.56.Rob-3
+  * Fix boulder shuffle plando hopefully
+
+### 8.3.30.Rob-1
+  * Update to latest main Dev
+
+### 8.3.17.Rob-2
+  * Fix a crash when opening an ice trap chest in a room that has ice traps in vanilla and quickly exiting the room.
+
+### 8.3.17.Rob-1
+  * Merge main dev
+
+### 8.3.12.Rob-2
+  * Fix Deku Tree MQ Upper Deku Baba logic
+
+### 8.3.12.Rob-1
+  * Update to latest main dev
+  * Reset supplementary version to 1 every time we merge main dev from now on.
+
+### v138
+  * Add Deku Tree Compass Room Withered Deku Baba
+
+### v137
+  * Add missing deku baba enemy drops in BOTW, Deku MQ, DC MQ
+
+### v136
+  * Fix BGS/Giants Knife/DD advancement
+
+### v135
+  * Fix DMT Summit boulder logic
+
+### v134
+  * Fix missing Jabu Jabus Belly MQ Cow
+
+### v133
+  * Fix Forest Temple MQ Stalfos enemy drops
+
+### v132
+  * Fix Ganons Castle MQ Logic Error causing occassional generation error
+
+### v131
+  * Resolve compiler warnings.
+
+### v130
+  * Fix GC Maze Gossip Stone in wrong region... again
+
+### v129
+  * Fix generation error w/ no adult trade items shuffled
+
+### v128
+  * Fix generation w/ MQ
+
+### v127
+  * Add golden boulder option to boulder shuffle
+
+### v126
+  * Fix anubis not displaying on minimap tracker
+  * Add Child KF Deku Babas and Deku Tree/MQ Deku Tree deku babas
+
+### v125
+  * Fix logic issue in MQ Deku Tree
+
+### v124
+  * Increase size of markers on enemy minimap tracker
+  * Rename Like-like to Like Like across the code
+
+### v123
+  * Enemy drops souls logic review fixes
+  * Rebuilt entire branch
+
+### v122
+  * Fix BOTW silver rupee softlock
+
+### v121
+  * Fix boomerang/bombchu trail corruption
+
+### v120
+  * Fix duplicate items on GUI
+  * See you next year No Deku Nut November
+
+### v119
+  * Add key ring colors
+
+### v118
+  * Fix Shadow Temple MQ Spike Wall Skulltula logic
+  * Fix GTG/MQ ceiling silver rupee wallmaster logic
+
+### v117
+  * Fix fix broken drops crash when changing rooms with deku shield in child spirit.
+
+### v116
+  * Stop breaking dark link
+
+### v115
+  * Add missing Jabu Jabu's Belly MQ Falling Like Like Room wonderitems
+
+### v114
+  * Fix Water Temple MQ After Dark Link Hookshot Wonderitem logic
+  * Fire Temple MQ Hammer Steps Stalfos logic
+
+### v113
+  * Scrubs misc hint setting broken when disabled
+
+### v111
+  * Fix Custom Song Name display breaking when using the enemy drop minimap tracker
+  * Update to main Dev 8.1.81
+
+### v110
+  * Various logic fixes
+
+### v109
+  * Fix Jabu Jabus Belly Invisible Enemies Room logic.
+
+### v108
+  * Fix MQ Spirit Child keese logic with fix_broken_actors
+  * Fix MQ Spirit Big Mirror enemy logic.
+  * Fix MQ Shadow Invisible Blades SoT blocks trick logic
+
+### v107
+  * Fix DC Upper Lizalfos Region soul logic
+
+### v106
+  * Fix ZF hidden cave logic
+
+### v105
+  * Merge main Dev
+  * Fix duplicate region "Deku Tree Basement Rotating Spike Room"
+
+### v104
+  * Fix missing fish again
+
+### v103
+  * Merge the rest of Potsanity 3.0. Probably just breaking things
+  * Fix GC Gossip Stone logic for boulder shuffle
+  * Fix Deku Baba Sticks/Nut soul shuffle logic
+
+### v102
+  * (Hopefully) Fix generating boss soul shuffle with random settings
+  * Ganons Castle/MQ enemy logic fixes
+  * Water Temple enemy logic fixes
+
+### v101
+  * Reverting Dev merge
+
+### v100
+  * Fix crash in MQ DC hallway before lower lizalfos with boulder shuffle
+
+### v99
+  * Temp removing adult bunny hood and dampe all night
+
+### v98
+  * Fix crash when pressing dpad down on equipment screen
+
+### v97
+  * Fix KZ crash - wasn't my fault this time :)
+
+### v96
+  * Add dampe all night setting
+
+### v95
+  * Fix masks rendering when in first person view
+
+### v94
+  * Bunny hood dpad fixes
+
+### v93
+  * Update to main Dev 8.1.13
+  * Add Adult Bunny Hood setting
+
+### v92
+  * Fix King Dobonko
+
+### v91
+  * Hopefully fix website custom music patching
+
+### v90
+  * Fix broken MQ Deku logic files
+
+### v89
+  * Boulder Shuffle and Soul Shuffle fixes
+
+### v88
+  * Fix a typo
+
+### v87
+  * Various Boulder Shuffle logic fixes
+
+### v86
+  * Fix disabled enemy drop locations giving shuffled items and appearing on minimap tracker
+
+### v85
+  * Fix King Zora boulder flag in boulder shuffle
+
+### v84
+  * Fix dark link in soul shuffle... again
+
+### v83
+  * Fix MQ DC failing to generate
+  * Fix soul shuffle logic for Spirit Temple MQ Central Chamber Wallmaster
+
+### v82
+  * New Enemy Soul Shuffle option: Regional
+  * Add MQ support for Boulder Shuffle
+  * Fix Boulder Shuffle not obeying "All Locations Reacable"
+  * Fix Fishing Shuffle progressive items drawing incorrect model after caught
+
+### v81
+  * Fishing LH Adult Fish 1 missing
+
+### v80
+  * Unfix the KZ unfreeze glitch
+
+### v79
+  * Fix boulder resizing hacks
+  * Properly resize Water Trial red ice boulders
+  * Some boulder shuffle logic fixes
+
+### v78
+  * Spirit Temple MQ Soul Shuffle Logic fixes
+
+### v77
+  * Fix Hylian loach fishing shuffle logic
+  * Fix MQ DC Soul Shuffle Logic
+
+### v76
+  * Add King Zora red ice to boulder shuffle
+
+### v75
+  * Don't break the red ice walls...
+
+### v74
+  * Properly resize boulders that replace red ice walls
+### v73
+  * Fix sandstorm transitions occassionally crashing
+
+### v72
+  * Don't delete all of the boulders
+
+### v71
+  * Fix burning kak crash in boulder shuffle
+
+### v70
+  * Enemy drops/souls logic fixes:
+    * MQ Forest Falling Room
+    * Forest Temple Block Push Room Upper Bubbles
+    * Forest Temple First Twisted Hallway Wallmaster
+    * Spirit Temple MQ Child Stalfos Fight Pot
+    * Spirit Temple MQ Central Chamber Flying Pots
+    * MQ Water Dragon Statue Wonderitems
+  * Add missing Deku Tree MQ Basement Larva Room Deku Scrub drop
+  * Fix accidentally removed MQ Water wonderitems
+### v69
+  * Boulder shuffle logic fixes
+
+### v68
+  * Fix broken Great Fairy Fountains
+
+### v67
+  * New setting: Shuffle Boulders
+  * New setting: Fix Broken Actors (replaces Fix Broken Drops)
+
+### v66
+  * Add Bunny Hood preset
+
+### v65
+  * Hopefully actually fix small key text boxes in fishing shuffle
+
+### v64
+  * Smaller fish in fishing game shuffle are no longer considered major items
+
+### v63
+  * Fix certain textboxes not displaying correctly when catching fish in fishing shuffle
+  * Fix unshuffled Spirit Temple MQ Wonderitems
+
+### v62
+  * Fix fishing shuffle owner rewards not being given if you mash the text boxes
+
+### v61
+  * Update to latest upstream 8.0.10
+  * New setting: Shuffle Fishing Game Fish
+  * Fix missing Wallmaster drop in MQ Light Trial
+
+### v60
+  * Fix MQ Spirit Child room not clearing in enemy soul shuffle
+
+### v59
+  * Fix Small Crates in MQ Fire Temple not shuffled
+
+### v58
+  * Fix missing Deku Tree Rotating Spike Skulltula
+
+### v57
+  * Fix missing grass in Lake Hylia
+
+### v56
+  * Fix incorrect overrides spawning in soul shuffle
+
+### v55
+  * Fix anubis spawns in enemy drop shuffle
+
+### v54
+  * Update multiworld coop context version #
+
+### v53
+  * Add souls to plentiful and ludicrous item pools
+  * Fix enemy minimap markers not displaying properly on some platforms.
+
+### v52
+  * Testing something that will hopeful improve seed generation
+
+### v51
+  * Add grass shuffle texture match contents
+  * Add MQ dungeons to grass shuffle
+  * Soul Logic fixes
+    * DMC Bubble Below Bridge To Fire Temple
+    * Deku Tree Basement Back Room Near GS Skulltula
+  * Fix Spirit Temple MQ Child Stalfos Fight Pot 4 not shuffled
+
+### v50
+  * New setting - Grass Shuffle ;P
+  * Add support for MMR custom music
+
+### v49
+  * Fix Temple of Time Gossip Stone Drops
+
+### v48
+  * Fix Forest Temple Upper Stalfos Drops
+  * Fix Dark Link drop
+  * Fix Skull Kids drops
+  * Fix Spirit Temple Child Bridge Bubble logic
+
+### v47
+  * Fix Forest Trial enemy logic
+
+### v46
+  * Potsanity Changes:
+    * Add new settings to shuffle empty pots/crates
+    * All fairy pots are now shuffled
+    * Update the animation when collecting a major item to spin above the player's head
+    * Lots of stuff under the hood
+  * Enemy drop shuffle tracker
+    * Adds a setting to enable a minimap tracker that displays the enemies that haven't been checked. Enemies display as red dots on the map.
+  * Soul Shuffle Logic improvements
+
+### v45
+  * Various soul shuffle logic fixes
+
+### v44
+  * Fix Shadow Temple GS Invisible Blades Room soul logic
+  * Fix Spirit Temple Child Bridge Bubble soul logic
+
+### v43
+  * Fix HF Cow Grotto Skulltula soul logic
+
+### v42
+  * Fix Forest Temple Right Courtyard Balcony Skullwalltula
+
+### v41
+  * Add flame effect to stick/nut upgrade so they are distinguishable
+
+### v40
+  * Enemy soul shuffle logic fixes:
+    * Forest Temple Map Chest
+    * GTG Beamos Chest
+    * GTG Stalfos Chest
+
+### v39
+  * Add MQ enemy soul shuffle logic
+
+### v38
+  * Fix souls and silver rupee save data not initializing properly on some platforms
+
+### v37
+  * Fix enemy souls not defaulting to enabled with only Bosses soul shuffle or starting with souls
+  * Fix soul menu not displaying correctly on Parallel emu core.
+
+### v36
+  * Add enemy soul shuffle menu
+
+### v35
+  * Fix dark link room not clearing in soul shuffle
+
+### v34
+  * Enemy Soul Shuffle Fixes:
+    * Fix logic for BOTW Dead Hand Chest
+    * Fix text for Dark Link soul incorrectly saying Ganondorf Soul
+
+### v33
+  * Forest temple soul logic fixes
+
+### v32
+  * Fix ganondorf not spawning in enemy soul shuffle
+
+### v31
+  * Fix missing souls from enemy drop logic in Ganons Castle
+
+### v30
+  * Add Dark Link to enemy soul shuffle
+
+### v29
+  * Add "Bosses" option to enemy soul shuffle
+
+### v28
+  * Fix broken flags in enemy soul shuffle
+
+### v27
+  * Add new setting 'Enemy Soul Shuffle'
+  * Enemy Drop logic improvements
+
+### v26
+  * Improve Fire Bubble logic in Enemy Drop Shuffle
+
+### v25
+  * Rebased onto main Dev version 7.1.139
+
+### v24
+  * Enemy Drop Shuffle Fixes:
+    * Fix logic for Ganons Castle MQ Water Trial Keese
+
+### v23
+  * Rebased onto main Dev version 7.1.118
+  * Enemy Drop Shuffle Fixes:
+    * Fix broken logic in Jabu
+    * Fix "Prevent Guays From Respawning" hack having weird invisible guay hitboxes on the ground.
+
+### v22
+  * New Cosmetic Option - Rainbow Tunic. Might also fix the weirdshot crash
+
+### v21
+  * New Setting - Individual Ocarina Note Shuffle
+  * Enemy Drop Shuffle Fixes:
+    * Fix broken Lost Woods Skullkid drop
+
+### v20
+  * New Ice Trap Settings:
+    * Custom Ice Trap Count
+      * Allows specifiying a number of junk items to be replaced w/ Ice Traps
+    * Custom Ice Trap Percent
+      * Allows specifying a percentage of junk items to be replaced w/ Ice Traps
+  * Gossip Stone Shuffle Fixes:
+    * Add MQ Dodongo's Cavern Gossip Stone
+
+### v19
+  * Enemy Drop Shuffle Fixes:
+    * Fix MQ GTG Heavy Block Room enemy logic
+
+### v18
+  * New Setting - Key Appearance Matches Dungeon
+    * When enabled, small keys, key rings, and boss keys will 
+    be colored to match their respective dungeons.
+
+### v17
+  * Silver Rupee Shuffle Fixes:
+    * Prevent items shuffled in silver rupee locations from being collected with boomerang
+    * Fix "TEXT ID ERROR" message when collecting the final silver rupee from a chest or shop
+
+### v16
+  * New Setting: Gossip Stone Shuffle
+  * Enemy Drop Shuffle Changes:
+    * Add skull kid drops
+  
+### v15
+
+  * Add Fast Armos Pushing
+
+### v14
+
+  * Silver Rupee Shuffle:
+    * Added Silver Rupee Pouches
+    * When silver rupees are collected, the text box will indicate how many rupees of that puzzle have been collected
+  * Enemy Drop Shuffle:
+    * Added setting under Misc. to prevent guays from respawning
+  * Bug Fixes:
+    * Fix bug where freestanding items would duplicate when reloading a room
+
 
 ## Installation
 
@@ -16,7 +568,7 @@ It is strongly suggested users use the web generator from here:
 <https://ootrandomizer.com/>
 
 If you wish to run the script raw, clone this repository and either run ```Gui.py``` for a
-graphical interface or ```OoTRandomizer.py``` for the command line version. They both require Python 3.8+.
+graphical interface or ```OoTRandomizer.py``` for the command line version. They both require Python 3.9+.
 To use the GUI, [NodeJS](https://nodejs.org/download/release/v20.17.0/) (v20 LTS, with npm) will additionally need to be installed. NodeJS v14.14.0 and earlier are no longer supported.
 The first time ```Gui.py``` is run it will need to install necessary components, which could take a few minutes. Subsequent instances will run much quicker.
 Supported output formats are .z64 (N64/Emulator), .wad (Wii VC, channel IDs NICE/NRKE recommended), Uncompressed ROM (for developmental purposes, offline build only)

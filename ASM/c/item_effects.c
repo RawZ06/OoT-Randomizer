@@ -3,6 +3,7 @@
 #include "trade_quests.h"
 #include "bg_gate_shutter.h"
 #include "save.h"
+#include "enemy_spawn_shuffle.h"
 
 #define rupee_cap ((uint16_t*)0x800F8CEC)
 volatile uint8_t MAX_RUPEES = 0;
@@ -63,6 +64,20 @@ void give_bottle(z64_file_t* save, int16_t bottle_item_id, int16_t arg2) {
 
 void give_dungeon_item(z64_file_t* save, int16_t mask, int16_t dungeon_id) {
     save->dungeon_items[dungeon_id].items |= mask;
+}
+
+void give_fishing_rod(z64_file_t* save, int16_t arg1, int16_t arg2) {
+    extended_savectx.has_fishing_rod = 1;
+}
+
+void give_fish(z64_file_t* save, int16_t weight, int16_t age) {
+    if(weight == 30) {
+        extended_savectx.has_loach = 1;
+        return;
+    }
+    if(weight > extended_savectx.largest_fish_found[age]) {
+        extended_savectx.largest_fish_found[age] = weight;
+    }
 }
 
 char key_counts[17][2] = {
@@ -240,7 +255,7 @@ void open_gate_and_mask_shop(z64_file_t* save, int16_t arg1, int16_t arg2) {
                     // Set the openingState so it starts to open
                     BgGateShutter* gate = (BgGateShutter*)curr;
                     gate->openingState = 2;
-                    return;
+                    break;
                 }
                 curr = curr->next;
             }
@@ -282,4 +297,12 @@ void unlock_ocarina_note(z64_file_t* save, int16_t arg1, int16_t arg2) {
             save->scene_flags[0x50].unk_00_ |= 1 << 4;
             break;
     }
+}
+
+void give_enemy_soul(z64_file_t *save, int16_t arg1, int16_t arg2) {
+    flags_setsoul(arg1);
+}
+
+void give_regional_enemy_soul(z64_file_t *save, int16_t arg1, int16_t arg2) {
+    flags_setsoul(arg1);
 }

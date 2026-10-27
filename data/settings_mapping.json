@@ -173,6 +173,8 @@
             "shuffle_bosses",
             "shuffle_ganon_tower",
             "shuffle_overworld_entrances",
+            "mix_entrance_pools",
+            "decouple_entrances",
             "shuffle_gerudo_valley_river_exit",
             "owl_drops",
             "warp_songs",
@@ -181,7 +183,9 @@
             "triforce_count_per_world",
             "triforce_goal_per_world",
             "free_bombchu_drops",
-            "plandomized_locations"
+            "plandomized_locations",
+            "shuffle_boulders",
+            "golden_boulders"
           ]
         },
         {
@@ -191,7 +195,9 @@
           "settings": [
             "shuffle_song_items",
             "shopsanity",
-            "shopsanity_prices",
+            "special_deal_price_distribution",
+            "special_deal_price_min",
+            "special_deal_price_max",
             "tokensanity",
             "shuffle_scrubs",
             "shuffle_child_trade",
@@ -205,14 +211,20 @@
             "shuffle_cows",
             "shuffle_beehives",
             "shuffle_wonderitems",
+            "shuffle_enemy_drops",
+            "shuffle_grass",
             "shuffle_kokiri_sword",
+            "shuffle_fairies",
             "shuffle_ocarinas",
             "shuffle_gerudo_card",
             "shuffle_beans",
             "shuffle_expensive_merchants",
             "shuffle_frog_song_rupees",
+            "shuffle_100_skulltula_rupee",
             "shuffle_loach_reward",
-            "shuffle_individual_ocarina_notes"
+            "shuffle_individual_ocarina_notes",
+            "shuffle_enemy_spawns",
+            "shuffle_fishies"
           ]
         },
         {
@@ -271,6 +283,7 @@
           "text": "Enable Tricks",
           "row_span": [8,10,10],
           "settings": [
+            "advanced_allowed_tricks",
             "allowed_tricks",
             "tricks_list_msg"
           ]
@@ -286,7 +299,7 @@
           "name": "starting_equipment_section",
           "text": "Starting Equipment",
           "col_span": 2,
-          "row_span": [2,2,2],
+          "row_span": [3,3,3],
           "settings": [
             "starting_equipment"
           ]
@@ -313,8 +326,11 @@
           "name": "starting_other_section",
           "text": "Other",
           "col_span": 2,
-          "row_span": [1,1,1],
+          "row_span": [2,2,2],
           "settings": [
+            "add_random_starting_items",
+            "random_starting_items_exclude",
+            "random_starting_items_count",
             "start_with_consumables",
             "start_with_rupees",
             "starting_hearts"
@@ -341,7 +357,7 @@
             "complete_mask_quest",
             "useful_cutscenes",
             "fast_chests",
-            "free_scarecrow",
+            "scarecrow_behavior",
             "fast_bunny_hood",
             "auto_equip_masks",
             "plant_beans",
@@ -389,10 +405,13 @@
             "deadly_bonks",
             "starting_tod",
             "blue_fire_arrows",
-            "fix_broken_drops",
+            "fix_broken_actors",
             "tcg_requires_lens",
             "no_collectible_hearts",
-            "one_item_per_dungeon"
+            "one_item_per_dungeon",
+            "prevent_guay_respawns",
+            "minimap_enemy_tracker",
+            "dogs_anywhere"
           ]
         },
         {
@@ -469,7 +488,8 @@
             "zora_color",
             "silver_gauntlets_color",
             "golden_gauntlets_color",
-            "mirror_shield_frame_color"
+            "mirror_shield_frame_color",
+            "extra_equip_colors"
           ]
         },
         {
@@ -593,7 +613,9 @@
           "row_span": [5,5,5],
           "settings": [
             "sfx_link_adult",
+            "sfx_link_adult_volume",
             "sfx_link_child",
+            "sfx_link_child_volume",
             "sfx_link_unavailable_msg",
             "sfx_navi_overworld",
             "sfx_navi_enemy",

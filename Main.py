@@ -12,7 +12,7 @@ from typing import Optional
 
 
 from Cosmetics import CosmeticsLog, patch_cosmetics
-from EntranceShuffle import set_entrances
+from EntranceShuffle import set_entrances, shuffle_random_entrances
 from Fill import distribute_items_restrictive, ShuffleError
 from Goals import update_goal_items, replace_goal_names
 from Hints import build_gossip_hints
@@ -23,14 +23,14 @@ from Models import patch_model_adult, patch_model_child
 from N64Patch import create_patch_file, apply_patch_file
 from Patches import patch_rom
 from Rom import Rom
-from Rules import set_rules, set_shop_rules
+from Rules import set_entrances_based_rules, set_rules, set_shop_rules
 from Settings import Settings
-from SettingsList import logic_tricks
+from SettingsList import logic_tricks, advanced_logic_tricks
 from Spoiler import Spoiler
 from Utils import default_output_path, is_bundled, run_process, data_path
 from World import World
 from version import __version__
-
+from BoulderShuffle import set_boulders, shuffle_boulders
 
 def main(settings: Settings, max_attempts: int = 10) -> Spoiler:
     clear_hint_exclusion_cache()
@@ -38,10 +38,10 @@ def main(settings: Settings, max_attempts: int = 10) -> Spoiler:
     start = time.process_time()
 
     rom = resolve_settings(settings)
-
     max_attempts = max(max_attempts, 1)
     spoiler = None
     for attempt in range(1, max_attempts + 1):
+        settings.reset_distribution()
         try:
             spoiler = generate(settings)
             break
@@ -51,7 +51,6 @@ def main(settings: Settings, max_attempts: int = 10) -> Spoiler:
                 raise
             else:
                 logger.info('Retrying...\n\n')
-            settings.reset_distribution()
     if spoiler is None:
         raise RuntimeError("Generation failed.")
     patch_and_output(settings, spoiler, rom)
@@ -63,15 +62,20 @@ def resolve_settings(settings: Settings) -> Optional[Rom]:
     logger = logging.getLogger('')
 
     old_tricks = settings.allowed_tricks
+    old_advanced_tricks = settings.advanced_allowed_tricks
     settings.load_distribution()
 
     # compare pointers to lists rather than contents, so even if the two are identical
     # we'll still log the error and note the dist file overrides completely.
-    if old_tricks and old_tricks is not settings.allowed_tricks:
+    if old_tricks and (old_tricks is not settings.allowed_tricks
+                    or old_advanced_tricks is not settings.advanced_allowed_tricks):
         logger.error('Tricks are set in two places! Using only the tricks from the distribution file.')
 
     for trick in logic_tricks.values():
         settings.settings_dict[trick['name']] = trick['name'] in settings.allowed_tricks
+
+    for trick in advanced_logic_tricks.values():
+        settings.settings_dict[trick['name']] = trick['name'] in settings.advanced_allowed_tricks
 
     # we load the rom before creating the seed so that errors get caught early
     outputting_specific_world = settings.create_uncompressed_rom or settings.create_compressed_rom or settings.create_wad_file
@@ -132,7 +136,7 @@ def build_world_graphs(settings: Settings) -> list[World]:
         logger.info('Creating Overworld')
 
         # Load common json rule files (those used regardless of MQ status)
-        if settings.logic_rules == 'glitched':
+        if settings.logic_rules == 'advanced':
             path = 'Glitched World'
         else:
             path = 'World'
@@ -165,6 +169,14 @@ def build_world_graphs(settings: Settings) -> list[World]:
     logger.info('Setting Entrances.')
     set_entrances(worlds, savewarps_to_connect)
 
+    set_boulders(worlds)
+
+    if worlds[0].entrance_shuffle:
+        shuffle_random_entrances(worlds)
+
+    shuffle_boulders(worlds)
+
+    set_entrances_based_rules(worlds)
     for world in worlds:
         if world.settings.empty_dungeons_mode == 'rewards':
             world.set_empty_dungeon_rewards(world.settings.empty_dungeons_rewards)
@@ -235,10 +247,7 @@ def compress_rom(input_file: str, output_file: str, delete_input: bool = False) 
         else:
             compressor_path += "Compress"
     elif platform.system() == 'Darwin':
-        if platform.machine() == 'arm64':
-            compressor_path += "Compress_ARM64.out"
-        else:
-            compressor_path += "Compress.out"
+        compressor_path += "Compress.out"
     else:
         logger.info("OS not supported for ROM compression.")
         raise Exception("This operating system does not support ROM compression. You may only output patch files or uncompressed ROMs.")

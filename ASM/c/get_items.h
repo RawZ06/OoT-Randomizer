@@ -6,6 +6,7 @@
 #include "en_item00.h"
 #include "override.h"
 
+struct item_row_t;
 extern uint8_t CFG_ADULT_TRADE_SHUFFLE;
 extern uint8_t CFG_CHILD_TRADE_SHUFFLE;
 
@@ -37,11 +38,10 @@ typedef struct xflag_t {
             uint8_t subflag;
         };
         struct {
-            uint32_t pad: 8;
-            uint32_t grotto_id: 5;
-            uint32_t room: 4;
-            uint32_t flag: 7;
-            uint32_t subflag: 8;
+            uint8_t grotto_id;
+            uint8_t room;
+            uint8_t flag;
+            uint8_t subflag;
         } grotto;
     };
 
@@ -57,8 +57,9 @@ void Collectible_WaitForMessageBox(EnItem00* this, z64_game_t* game);
 void reset_collectible_mutex();
 void override_flags_init();
 bool Get_NewFlag(xflag_t* flag);
-
+void Set_NewFlag(xflag_t* flag);
+void dispatch_item(uint16_t resolved_item_id, uint8_t player, override_t* override, struct item_row_t* item_row);
 extern xflag_t drop_collectible_override_flag;
-extern EnItem00* collectible_mutex;
+extern void* collectible_mutex;
 
 #endif

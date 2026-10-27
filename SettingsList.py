@@ -10,7 +10,7 @@ from Item import ItemInfo
 from Location import LocationIterator
 from LocationList import location_table
 from Models import get_model_choices
-from SettingsListTricks import logic_tricks
+from SettingsListTricks import logic_tricks, advanced_logic_tricks
 from SettingTypes import SettingInfo, SettingInfoStr, SettingInfoList, SettingInfoDict, Textbox, Button, Checkbutton, \
     Combobox, Radiobutton, Fileinput, Directoryinput, Textinput, ComboboxInt, Scale, Numberinput, MultipleSelect, \
     SearchBox
@@ -623,17 +623,7 @@ class SettingInfos:
         default        = False,
         disable        = {
             True: {
-                'sections': ['shuffle_section'],
-                'settings': [
-                    'open_forest', 'open_kakariko', 'open_door_of_time', 'zora_fountain', 'gerudo_fortress', 'dungeon_shortcuts_choice',
-                    'dungeon_shortcuts', 'trials_random', 'trials',
-                    'starting_age', 'shuffle_interior_entrances', 'shuffle_hideout_entrances', 'shuffle_gerudo_fortress_heart_piece',
-                    'shuffle_grotto_entrances', 'shuffle_dungeon_entrances',
-                    'shuffle_bosses', 'shuffle_overworld_entrances', 'shuffle_gerudo_valley_river_exit', 'owl_drops', 'warp_songs', 'spawn_positions',
-                    'triforce_hunt', 'triforce_count_per_world', 'triforce_goal_per_world', 'free_bombchu_drops', 'one_item_per_dungeon',
-                    'shuffle_mapcompass', 'shuffle_smallkeys', 'shuffle_hideoutkeys', 'shuffle_tcgkeys', 'key_rings_choice', 'key_rings',
-                    'shuffle_silver_rupees', 'silver_rupee_pouches_choice', 'silver_rupee_pouches', 'shuffle_bosskeys', 'enhance_map_compass',
-                ],
+                'sections': ['open_section', 'world_section', 'shuffle_section', 'shuffle_dungeon_section'],
             },
         },
         shared         = True,
@@ -644,7 +634,7 @@ class SettingInfos:
         default        = 'glitchless',
         choices        = {
             'glitchless': 'Glitchless',
-            'glitched':   'Glitched',
+            'advanced':   'Advanced',
             'none':       'No Logic',
         },
         gui_tooltip    = '''\
@@ -656,20 +646,19 @@ class SettingInfos:
             some minor tricks. Add minor tricks to consider for logic
             in the 'Detailed Logic' tab.
 
-            'Glitched': Movement-oriented glitches are likely required.
-            No locations excluded.
+            'Advanced': More Glitchless tricks and toggleable
+            glitches for accessability to curate the overall difficulty
+            level for every skill level.
 
             'No Logic': Maximize randomization, All locations are
             considered available. MAY BE IMPOSSIBLE TO BEAT.
         ''',
         disable        = {
-            'glitchless': {'settings': ['tricks_list_msg']},
-            'glitched':   {'settings': ['allowed_tricks', 'shuffle_interior_entrances', 'shuffle_hideout_entrances', 'shuffle_gerudo_fortress_heart_piece', 'shuffle_grotto_entrances',
-                                         'shuffle_dungeon_entrances', 'shuffle_overworld_entrances', 'shuffle_gerudo_valley_river_exit', 'owl_drops',
-                                         'warp_songs', 'spawn_positions', 'mq_dungeons_mode', 'mq_dungeons_specific',
-                                         'mq_dungeons_count', 'shuffle_bosses', 'shuffle_ganon_tower', 'dungeon_shortcuts', 'deadly_bonks',
-                                         'shuffle_freestanding_items', 'shuffle_pots', 'shuffle_crates', 'shuffle_beehives', 'shuffle_silver_rupees', 'shuffle_wonderitems']},
-            'none':       {'settings': ['allowed_tricks', 'logic_no_night_tokens_without_suns_song', 'reachable_locations']},
+            'glitchless': {'settings': ['tricks_list_msg', 'advanced_allowed_tricks']},
+            # Forcing blue fire arrows to be on, and the tcg lens setting to be off as we can do it without the lens logically
+            # and don't care if people do 1/32
+            'advanced':   {'settings': ['tricks_list_msg', 'blue_fire_arrows', 'tcg_requires_lens', 'shuffle_enemy_drops', 'shuffle_boulders', 'golden_boulders']},
+            'none':       {'settings': ['allowed_tricks', 'advanced_allowed_tricks', 'logic_no_night_tokens_without_suns_song', 'reachable_locations']},
         },
         shared         = True,
     )
@@ -1241,11 +1230,12 @@ class SettingInfos:
             required to access the Deku Tree. Items needed for this will be
             guaranteed inside the forest area. This setting is incompatible
             with starting as adult, and so Starting Age will be locked to Child.
-            With either "Shuffle Interior Entrances" set to "All", "Shuffle
-            Overworld Entrances" on, "Randomize Warp Song Destinations" on
-            or "Randomize Overworld Spawns" on, Closed Forest will instead
-            be treated as Closed Deku with starting age Child and WILL NOT
-            guarantee that these items are available in the forest area.
+            With any of "Shuffle Interior Entrances" set to "All", "Shuffle
+            Overworld Entrances" on, "Randomize Warp Song Destinations" on,
+            "Randomize Overworld Spawns" on, or "Shuffle Grottos" in Advanced
+            Logic, Closed Forest will instead be treated as Closed Deku with
+            starting age Child and WILL NOT guarantee that these items are
+            available in the forest area.
         ''',
         shared         = True,
         disable        = {
@@ -1292,13 +1282,40 @@ class SettingInfos:
         },
     )
 
-    open_door_of_time = Checkbutton(
-        gui_text       = 'Open Door of Time',
+    open_door_of_time = Combobox(
+        gui_text       = 'Door of Time',
+        default        = 'sot',
+        choices        = {
+            'open':           'Open',
+            'sot':            'Song of Time',
+            'oot_sot':        'Ocarina of Time + Song of Time',
+            'stones':         '3 Spiritual Stones',
+            'stones_sot':     '3 Stones + Song of Time',
+            'stones_oot_sot': '3 Stones + OoT + SoT',
+        },
         gui_tooltip    = '''\
-            The Door of Time starts opened instead of needing to
-            play the Song of Time. If this is not set, only
-            an Ocarina and Song of Time must be found to open
-            the Door of Time.
+            'Open': The Door of Time starts opened instead of
+            needing to play the Song of Time.
+
+            'Song of Time': Only an Ocarina and Song of Time
+            must be found to open the Door of Time. This is the
+            vanilla behavior despite what the story suggests.
+
+            'Ocarina of Time + Song of Time': The Door of Time
+            is opened by playing the Song of Time on the
+            Ocarina of Time.
+
+            '3 Spiritual Stones': The Door of Time
+            automatically opens upon collecting all three
+            Spiritual Stones. Song of Time is not required.
+
+            '3 Stones + Song of Time': The Door of Time is
+            opened by playing the Song of Time after collecting
+            all three Spiritual Stones.
+
+            '3 Stones + OoT + SoT': The Door of Time is opened
+            by playing the Song of Time on the Ocarina of Time
+            after collecting all three Spiritual Stones.
         ''',
         shared         = True,
         gui_params     = {
@@ -1529,6 +1546,49 @@ class SettingInfos:
         gui_params     = {
             "hide_when_disabled": True,
         },
+    )
+
+    shuffle_enemy_drops = Checkbutton(
+        gui_text       = 'Shuffle Enemy Drops',
+        gui_tooltip    = '''\
+            Enabling will allow every unique non-boss enemy that normally drops a random item to drop a shuffled item.
+            The item will be automatically awarded when killing the enemy.
+
+            There are a handful of exceptions:
+                Poes
+                Big Octo
+                Stahlchild
+                Leevers
+                And maybe some others :)
+
+            Some important tidbits:
+
+            In the vanilla game, Adult Kokiri Forest no longer has enemies after completing Forest Temple.
+            Enabling this setting will force the enemies to always spawn.
+
+            Individual Guays respawn themselves 10 times after you kill them and then spawn a large Guay.
+            Only the first guay will drop an item. Child Night Lon-Lon has 15 unique Guays. Good luck :)
+
+            Enemies that spawn additional enemies when you kill them will drop items but with some caveats:
+                Bari (the large jellyfish things in Jabu) will only drop an item from the large jelly.
+                    The 3 smaller ones won't
+                Floormasters - After killing the floormaster, it will split in 3.
+                    One of the children will drop an item.
+
+            Deku Babas are the ultimate enemy so they will only drop
+            their shuffled item if you hit them with Elemental Arrows.
+        The Deku Babas in Deku Tree and Bottom of the Well don't have additional drops.
+        ''',
+        default        = False,
+        shared         = True,
+        gui_params     = {
+            'randomize_key': 'randomize_settings',
+        },
+        disable        =
+        {
+            True: {'settings': ['fast_shadow_boat']},
+            False : { 'settings': ['prevent_guay_respawns', 'minimap_enemy_tracker']},
+        }
     )
 
     empty_dungeons_mode = Combobox(
@@ -1781,13 +1841,15 @@ class SettingInfos:
     shuffle_bosses = Combobox(
         gui_text       = 'Shuffle Boss Entrances',
         gui_tooltip    = '''\
-            Shuffle dungeon boss rooms.  This affects the boss rooms of all stone and medallion dungeons.
+            Shuffle the pool of dungeon boss entrances.
+            This affects the boss rooms of all stone and medallion dungeons.
 
             'Age-Restricted':
-            Shuffle the locations of child boss rooms and adult boss rooms separately.
+            Shuffle the entrances of child and adult boss rooms separately.
 
             'Full':
-            Shuffle the locations of all boss rooms together.  Child may be expected to defeat Phantom Ganon and/or Bongo Bongo.
+            Shuffle the entrances of all boss rooms together.
+            Child may be expected to defeat Phantom Ganon and/or Bongo Bongo.
         ''',
         default        = 'off',
         choices        = {
@@ -1839,6 +1901,58 @@ class SettingInfos:
             Just like when shuffling interior entrances, shuffling overworld
             entrances disables trade timers and trade items never revert,
             even when dying or loading a save.
+        ''',
+        default        = False,
+        shared         = True,
+        gui_params     = {
+            'randomize_key': 'randomize_settings',
+        },
+    )
+
+    mix_entrance_pools = MultipleSelect(
+        gui_text        = 'Mix Entrance Pools',
+        choices         = {
+            'Interior': 'Interiors',
+            'GrottoGrave': 'Grottos',
+            'Dungeon': 'Dungeons',
+            'Overworld': 'Overworld',
+        },
+        gui_tooltip    = '''\
+            Shuffle the selected entrances into a mixed pool
+            instead of separate ones. Has no effect on pools
+            whose entrances aren't shuffled.
+
+            For example, enabling the settings to shuffle
+            grotto, dungeon, and overworld entrances and
+            selecting grotto and dungeon entrances here will
+            allow a dungeon to be inside a grotto or vice
+            versa, while overworld entrances are shuffled in
+            their own separate pool and indoors stay vanilla.
+        ''',
+        default        = [],
+        shared         = True,
+        gui_params     = {
+            'randomize_key': 'randomize_settings',
+            'distribution':  [
+                ([], 2),
+                (['Interior', 'GrottoGrave', 'Dungeon'], 1),
+                (['Interior', 'GrottoGrave', 'Dungeon', 'Overworld'], 1),
+            ],
+        },
+    )
+
+    decouple_entrances = Checkbutton(
+        gui_text       = 'Decouple Entrances',
+        gui_tooltip    = '''\
+            Decouple entrances when shuffling them.
+            This means you are no longer guaranteed to end up back where you
+            came from when you go back through an entrance.
+
+            This also adds the one-way entrance from Gerudo Valley to Lake Hylia
+            in the pool of overworld entrances when they are shuffled.
+
+            Boss entrances are currently excluded from this setting and remain
+            coupled regardless.
         ''',
         default        = False,
         shared         = True,
@@ -1915,7 +2029,8 @@ class SettingInfos:
     free_bombchu_drops = Checkbutton(
         gui_text       = 'Add Bombchu Bag and Drops',
         gui_tooltip    = '''\
-            Bombchus are properly considered in logic.
+            Bombchus are properly considered in logic and
+            the game is changed to account for this fact.
 
             The first Bombchu pack will always be a
             Bombchu Bag giving the same amount of Bombchus
@@ -1945,6 +2060,35 @@ class SettingInfos:
         shared         = True,
         gui_params     = {
             'randomize_key': 'randomize_settings',
+        },
+    )
+
+    shuffle_boulders = Checkbutton(
+        gui_text       = 'Shuffle Boulders',
+        gui_tooltip    = '''\
+            Boulders (and red ice blocks) will be
+            randomly shuffled around the world.
+        ''',
+        shared         = True,
+        gui_params     = {
+            'randomize_key': 'randomize_settings',
+        },
+        disable        = {
+            False: {'settings': ['golden_boulders']}
+        }
+    )
+
+    golden_boulders = Checkbutton(
+        gui_text       = 'Add Golden Boulders',
+        gui_tooltip    = '''\
+            Some of the silver boulders will be
+            converted into gold boulders which
+            require Gold Gauntlets in order to lift
+        ''',
+        shared         = True,
+        gui_params     = {
+            'randomize_key': 'randomize_settings',
+            "hide_when_disabled": True,
         },
     )
 
@@ -2002,8 +2146,8 @@ class SettingInfos:
             'random': 'Random # of Items Per Shop',
         },
         disable        = {
-            'off':  {'settings': ['shopsanity_prices']},
-            '0':    {'settings': ['shopsanity_prices']},
+            'off':  {'settings': ['special_deal_price_distribution', 'special_deal_price_min', 'special_deal_price_max']},
+            '0':    {'settings': ['special_deal_price_distribution', 'special_deal_price_min', 'special_deal_price_max']},
         },
         gui_tooltip    = '''\
             Randomizes Shop contents.
@@ -2044,36 +2188,73 @@ class SettingInfos:
         },
     )
 
-    shopsanity_prices = Combobox(
-        gui_text         = 'Shopsanity Prices',
-        default          = 'random',
+    special_deal_price_distribution = Combobox(
+        gui_text         = 'Special Deal Prices',
+        default          = 'betavariate',
         choices          = {
-            'random':          "Random",
-            'random_starting': "Starting Wallet",
-            'random_adult':    "Adult's Wallet",
-            'random_giant':    "Giant's Wallet",
-            'random_tycoon':   "Tycoon's Wallet",
-            'affordable':      "Affordable",
+            'vanilla':     'Vanilla',
+            'betavariate': 'Weighted',
+            'uniform':     'Uniform',
+        },
+        disable          = {
+            'vanilla': {'settings': ['special_deal_price_min', 'special_deal_price_max']},
         },
         gui_tooltip      = '''\
-            Controls the randomization of prices for shopsanity items.
-            For more control, utilize the plandomizer.
+            Controls how the prices for Special Deal items in shops are
+            selected. For more control, utilize the plandomizer.
 
-            'Random': The default randomization. Shop prices for
-            shopsanity items will range between 0 to 300 rupees,
-            with a bias towards values slightly below the middle of the
-            range, in multiples of 5.
+            'Vanilla': Each item will be sold for the price of the item
+            that appears in its slot in the vanilla game.
 
-            'X Wallet': Shop prices for shopsanity items will range
-            between 0 and the specified wallet's maximum capacity,
-            in multiples of 5.
+            'Weighted': Shop prices will be biased towards slightly below
+            the middle of the selected range, with very low or very high
+            prices only appearing rarely.
 
-            'Affordable': Shop prices for shopsanity items will be
-            fixed to 10 rupees.
+            'Uniform': Each price value in the selected range is equally
+            likely.
         ''',
-        disabled_default =  'random',
         shared           = True,
         gui_params       = {
+            "hide_when_disabled": True,
+        },
+    )
+
+    special_deal_price_min = Scale(
+        gui_text       = 'Minimum Special Deal Price',
+        default        = 0,
+        minimum        = 0,
+        maximum        = 995,
+        step           = 5,
+        shared         = True,
+        gui_tooltip    = '''\
+            Select the minimum price in rupees for Special Deal
+            items in shops. Prices will be selected randomly in
+            multiples of 5 according to the "Special Deal Price
+            Distribution" setting. Set this setting and "Maximum
+            Special Deal Price" to the same value to give all
+            Special Deals a fixed price.
+        ''',
+        gui_params     = {
+            "hide_when_disabled": True,
+        },
+    )
+
+    special_deal_price_max = Scale(
+        gui_text       = 'Maximum Special Deal Price',
+        default        = 300,
+        minimum        = 0,
+        maximum        = 995,
+        step           = 5,
+        shared         = True,
+        gui_tooltip    = '''\
+            Select the maximum price in rupees for Special Deal
+            items in shops. Prices will be selected randomly in
+            multiples of 5 according to the "Special Deal Price
+            Distribution" setting. Set this setting and "Minimum
+            Special Deal Price" to the same value to give all
+            Special Deals a fixed price.
+        ''',
+        gui_params     = {
             "hide_when_disabled": True,
         },
     )
@@ -2357,6 +2538,20 @@ class SettingInfos:
             'randomize_key': 'randomize_settings',
         },
     )
+    shuffle_grass = Checkbutton(
+        gui_text       = 'Shuffle Grass',
+        gui_tooltip    = '''\
+            Grass will contain random items.
+
+            If you enable this, there's seriously
+            some what's wrong with you :)
+        ''',
+        default        = False,
+        shared         = True,
+        gui_params     = {
+            'randomize_key': 'randomize_settings',
+        },
+    )
 
     shuffle_wonderitems = Checkbutton(
         gui_text       = 'Shuffle Wonderitems',
@@ -2382,6 +2577,34 @@ class SettingInfos:
                               grass stepping stones in Kokiri Forest.
         ''',
         default        = False,
+        shared         = True,
+        gui_params     = {
+            'randomize_key': 'randomize_settings',
+        },
+    )
+
+    shuffle_fairies = MultipleSelect(
+        gui_text       = 'Shuffle Fairies',
+        gui_tooltip    = '''\
+            Fairies will give shuffled items.
+                Gossip Stones: Fairies spawned by playing Song of Storms, and any other Child Song. in front of gossip stones (2 checks)
+                
+                Butterflies: Holding a Deku Stick near butterflies will turn them into fairies.
+                
+                Fairy fountains: All fairies found in fairy fountainsand the fairies in Ganon's Castle
+                
+                Suns Song/Song of Storms: Fairies spawned by playing Suns Song or Song of Storms in certain spots. Includes Collossus Oasis fairies.
+                
+                Bean Plant: Playing Song of Storms on a soil patch after planting a Magic Bean will spawn 3 fairies.
+        ''',
+        choices        = {
+            "GossipFairy": "Gossip Stones",
+            "ButterflyFairy":   "Butterflies",
+            "SunsStormsFairy":   "Suns Song/Song of Storms",
+            "FountainFairy":      "Fairy fountains",
+            "BeanPlantFairy":    "Bean Plant"
+        },
+        default        = [],
         shared         = True,
         gui_params     = {
             'randomize_key': 'randomize_settings',
@@ -2477,6 +2700,32 @@ class SettingInfos:
         },
     )
 
+    shuffle_fishies = Checkbutton(
+        gui_text       = 'Shuffle Fishing Game Fish',
+        gui_tooltip    = '''\
+            Fish shuffle?
+        ''',
+        default        = False,
+        shared         = True,
+        gui_params     = {
+            'randomize_key': 'randomize_settings',
+        },
+    )
+
+    shuffle_100_skulltula_rupee = Checkbutton(
+        gui_text       = 'Shuffle 100 Skulltula Reward',
+        gui_tooltip    = '''\
+            Enabling this adds the repeatable Huge Rupee reward
+            from the Skulltula house to the item pool. This is obtained
+            by collecting all 100 gold skulltulas.
+        ''',
+        default        = False,
+        shared         = True,
+        gui_params     = {
+            'randomize_key': 'randomize_settings',
+        },
+    )
+
     shuffle_loach_reward = Combobox(
         gui_text       = 'Shuffle Hyrule Loach Reward',
         gui_tooltip    = '''\
@@ -2526,6 +2775,32 @@ class SettingInfos:
         shared         = True,
         gui_params     = {
             'randomize_key': 'randomize_settings',
+        },
+    )
+
+    shuffle_enemy_spawns = Combobox(
+        gui_text       = 'Shuffle Enemy Souls',
+        gui_tooltip    = '''\
+            Enabling this will prevent enemies from
+            spawning into the world until their "Soul"
+            has been collected. Each enemy type will
+            have a soul added into the item pool
+        ''',
+        default        = 'off',
+        choices        = {
+            'off': 'Off',
+            'all': 'All',
+            'bosses': 'Bosses',
+            'regional': 'Regional'
+        },
+        shared         = True,
+        gui_params     = {
+            'randomize_key': 'randomize_settings',
+            'distribution': [
+                ('off',      1),
+                ('all',      1),
+                ('bosses',   1)
+            ],
         },
     )
 
@@ -3040,13 +3315,25 @@ class SettingInfos:
         shared          = True,
     )
 
-    enhance_map_compass = Checkbutton(
+    enhance_map_compass = MultipleSelect(
         gui_text       = 'Maps and Compasses Give Information',
+        choices        = {
+            'map_mq':                'Map gives MQ info',
+            'map_dungeon_location':  'Map gives dungeon location',
+            'compass_boss_location': 'Compass gives boss location',
+            'compass_reward':        'Compass gives reward info',
+        },
+        default         = [],
         gui_tooltip    = '''\
             Gives the Map and Compass extra functionality.
-            Map will tell if a dungeon is vanilla or Master Quest.
-            Compass will tell what medallion or stone is within.
-            The Temple of Time Altar will no longer provide
+
+            Map can be enhanced to tell if a dungeon is vanilla or Master Quest,
+            and to give dungeon locations if Dungeon entrance shuffle is enabled.
+
+            Compass can be enhanced to reveal which boss is in the corresponding dungeon
+            if Boss entrance shuffle is enabled,
+            or to tell what medallion or stone is within.
+            If compass is enabled, the Temple of Time Altar will no longer provide
             information on the location of medallions and stones.
 
             'Maps/Compasses: Remove': The dungeon information is
@@ -3055,7 +3342,6 @@ class SettingInfos:
             'Maps/Compasses: Start With': The dungeon information
             is available immediately from the dungeon menu.
         ''',
-        default        = False,
         shared         = True,
         gui_params     = {
             'randomize_key': 'randomize_settings',
@@ -3118,8 +3404,26 @@ class SettingInfos:
             and MAY be required to complete the game.
 
             Tricks in the left column are NEVER required.
+        '''
+    )
 
-            Tricks are only relevant for Glitchless logic.
+    advanced_allowed_tricks = SearchBox(
+        gui_text       = "Enable Advanced Tricks",
+        shared         = True,
+        choices        = {
+            val['name']: gui_text for gui_text, val in advanced_logic_tricks.items()
+        },
+        default        = [],
+        gui_params     = {
+            'choice_tooltip': {choice['name']: choice['tooltip'] for choice in advanced_logic_tricks.values()},
+            'filterdata': {val['name']: val['tags'] for _, val in advanced_logic_tricks.items()},
+            "hide_when_disabled": True,
+        },
+        gui_tooltip='''
+            Tricks moved to the right column are in-logic
+            and MAY be required to complete the game.
+
+            Tricks in the left column are NEVER required.
         '''
     )
 
@@ -3166,6 +3470,47 @@ class SettingInfos:
         gui_tooltip    = '''\
             Begin the game with the selected songs already learnt.
         ''',
+    )
+
+    add_random_starting_items = Checkbutton(
+        gui_text         = 'Additional Random Starting Items',
+        gui_tooltip      = '''\
+            Begin the game with a configurable amount of randomly selected items in
+            addition to your selections from the tables.
+        ''',
+        disable          = {
+            False: {'settings': ['random_starting_items_exclude', 'random_starting_items_count']}
+        },
+        shared           = True,
+    )
+
+    random_starting_items_exclude = MultipleSelect(
+        gui_text         = 'Exclude Item Types',
+        gui_tooltip      = '''\
+            Selections here will be excluded from the random starting item pool.
+        ''',
+        choices          = {
+            'songs':           'Songs',
+            'bombchus':        'Bombchus',
+            'shields':         'Deku/Hylian Shields',
+            'deku_upgrades':   'Deku Stick/Nut Upgrades',
+            'health_upgrades': 'Health Upgrades',
+            'junk':            'Junk Items',
+        },
+        default          = [],
+        disabled_default = [],
+        shared           = True,
+    )
+
+    random_starting_items_count = Scale(
+        gui_text         = 'Amount of Items',
+        gui_tooltip      = '''\
+            Configure the amount of random items to start with.
+        ''',
+        default          = 0,
+        minimum          = 0,
+        maximum          = 10,
+        shared           = True,
     )
 
     start_with_consumables = Checkbutton(
@@ -3287,12 +3632,22 @@ class SettingInfos:
         shared         = True,
     )
 
-    free_scarecrow = Checkbutton(
-        gui_text       = "Free Scarecrow's Song",
+    scarecrow_behavior = Combobox(
+        gui_text       = 'Scarecrow Behavior',
+        default        = 'vanilla',
+        choices        = {
+            'vanilla':   'Vanilla',
+            'fast':   'Fast',
+            'free':  'Free',
+        },
         gui_tooltip    = '''\
-            Pulling out the Ocarina near a
-            spot at which Pierre can spawn will
-            do so, without needing the song.
+            "Fast" will require setting the same song
+            both as child and adult, but pulling out
+            the Ocarina near a spot at which Pierre can
+            spawn will do so, without needing the song.
+
+            "Free" removes both the need to set the song first
+            and to play the song to summon Pierre.
         ''',
         shared         = True,
     )
@@ -3384,9 +3739,14 @@ class SettingInfos:
             The boat sequence in Shadow Temple will be massively sped up.
             The two Stalfos will still fall on the boat, but you
             won't have time to fight them.
+            For this reason, this setting cannot be enabled if Shuffle
+            Enemy Drops is on.
         ''',
         default        = False,
         shared         = True,
+        gui_params     = {
+            "hide_when_disabled": True,
+        },
     )
 
     chicken_count_random = Checkbutton(
@@ -3531,19 +3891,22 @@ class SettingInfos:
     misc_hints = MultipleSelect(
         gui_text        = 'Misc. Hints',
         choices         = {
-            'altar':       'Temple of Time Altar',
-            'dampe_diary': "Dampé's Diary (Hookshot)",
-            'ganondorf':   'Ganondorf (Light Arrows)',
-            'warp_songs_and_owls':  'Warp Songs and Owls',
-            '10_skulltulas':  'House of Skulltula: 10',
-            '20_skulltulas':  'House of Skulltula: 20',
-            '30_skulltulas':  'House of Skulltula: 30',
-            '40_skulltulas':  'House of Skulltula: 40',
-            '50_skulltulas':  'House of Skulltula: 50',
-            'frogs2':         'Frogs Ocarina Game',
-            'mask_shop':  'Shuffled Mask Shop',
-            'unique_merchants':  'Unique Merchants',
-            'big_poes':  'Market Big Poes',
+            'altar':               'Temple of Time Altar',
+            'dampe_diary':         "Dampé's Diary (Hookshot)",
+            'ganondorf':           'Ganondorf (Light Arrows)',
+            'warp_songs_and_owls': 'Warp Songs and Owls',
+            '10_skulltulas':       'House of Skulltula: 10',
+            '20_skulltulas':       'House of Skulltula: 20',
+            '30_skulltulas':       'House of Skulltula: 30',
+            '40_skulltulas':       'House of Skulltula: 40',
+            '50_skulltulas':       'House of Skulltula: 50',
+            '100_skulltulas':      'House of Skulltula: 100',
+            'frogs2':              'Frogs Ocarina Game',
+            'mask_shop':           'Shuffled Mask Shop',
+            'unique_merchants':    'Unique Merchants',
+            'big_poes':            'Market Big Poes',
+            'skull_mask':          'Deku Theater Skull Mask',
+            'mask_of_truth':       'Deku Theater Mask of Truth',
         },
         gui_tooltip    = '''\
             This setting adds some hints at locations
@@ -3584,7 +3947,7 @@ class SettingInfos:
             Placing yourself on the log at Zora River
             where you play the songs for the frogs will
             tell you what the reward is for playing all
-            six non warp songs.
+            six non-warp songs.
 
             If shuffled, right side items in the mask
             shop will be visible but not obtainable
@@ -3600,6 +3963,9 @@ class SettingInfos:
 
             The Poe collector will tell the reward for selling
             him Big Poes.
+
+            The sign in Deku Theater will tell the reward for showing
+            the Skull Mask and/or the Mask of Truth.
         ''',
         shared         = True,
         default        = ['altar', 'ganondorf', 'warp_songs_and_owls'],
@@ -3707,7 +4073,7 @@ class SettingInfos:
     )
 
     correct_potcrate_appearances = Combobox(
-        gui_text       = 'Pot, Crate, & Beehive Appearance Matches Contents',
+        gui_text       = 'Pot, Crate, Grass, & Beehive Appearance Matches Contents',
         default        = 'textures_unchecked',
         choices        = {
             'off':                'Off',
@@ -3717,9 +4083,9 @@ class SettingInfos:
         gui_tooltip    = '''\
             If enabled, pot/crate textures, and beehive wiggling will reflect its contents.
 
-            Off - Pots, crates, and beehives will appear as vanilla.
+            Off - Pots, crates, grass and beehives will appear as vanilla.
 
-            Texture (Match Content) - Pot and crate textures will reflect the contents.
+            Texture (Match Content) - Pot, crate, grass textures will reflect the contents.
             Golden Pots/crates will contain major items.
             Pots/crates with keys on them will contain small keys.
             Pots/crates containing boss keys will use a variation of the boss key chest texture.
@@ -3728,7 +4094,7 @@ class SettingInfos:
             The texture will revert to the original texture once the item is collected.
             Beehives containing non-junk items will wiggle until collected.
 
-            Texture (Unchecked) - All pots/crates containing shuffled items
+            Texture (Unchecked) - All pots/crates/grass containing shuffled items
             will appear with a golden texture. The texture will revert to the
             original texture once the item is collected.
             Beehives will wiggle until their item is collected.
@@ -3742,14 +4108,16 @@ class SettingInfos:
     key_appearance_match_dungeon = Checkbutton(
         gui_text       = 'Key Appearance Matches Dungeon',
         gui_tooltip    = '''\
-            Small keys and boss keys (not key rings)
+            Small keys and boss keys
             will use custom models to match their dungeon.
+
+            Key rings will be colored to match their dungeon.
         ''',
         shared         = True,
     )
 
     potcrate_textures_specific = MultipleSelect(
-        gui_text        = 'Pot and Crate Textures',
+        gui_text        = 'Pot, Crate, & Grass Textures',
         choices         = {
             'major':    "Major items",
             'bosskeys': "Boss keys",
@@ -3759,9 +4127,9 @@ class SettingInfos:
         },
         default         = ['major', 'bosskeys', 'keys', 'tokens', 'hearts'],
         gui_tooltip     = '''\
-            Select specific pots and crates textures.
+            Select specific pot/crate/grass textures.
             Any unchecked option will make all items in the category
-            appear in regular pots/crates.
+            appear in regular pots/crates/grass.
         ''',
         shared          = True,
         gui_params     = {
@@ -3770,9 +4138,9 @@ class SettingInfos:
     )
 
     soa_unlocks_potcrate_texture = Checkbutton(
-        gui_text       = 'Stone of Agony Unlocks Pot and Crate Textures',
+        gui_text       = 'Stone of Agony Unlocks Pot, Crate, & Grass Textures',
         gui_tooltip    = '''\
-            Textures for pots and crates will only be correct
+            Textures for pots, crates, and grass will only be correct
             when Stone of Agony is found.
         ''',
         shared         = True,
@@ -3781,20 +4149,33 @@ class SettingInfos:
         },
     )
 
-    ocarina_songs = Combobox(
+    ocarina_songs = MultipleSelect(
         gui_text       = 'Randomize Ocarina Melodies',
-        default        = 'off',
+        default        = [],
         choices        = {
-            'off': 'Off',
-            'frog': 'Frog Songs Only',
-            'warp': 'Warp Songs Only',
-            'all':  'All Songs',
+            'frog':   'Top Row Songs',
+            'warp':   'Warp Songs',
+            'frogs2': 'Frogs Ocarina Game',
         },
         gui_tooltip    = '''\
             Will need to memorize a new set of songs.
             Can be silly, but difficult. All songs are
             generally sensible, but warp songs are
-            typically more difficult than frog songs.
+            typically more difficult than top row
+            songs.
+
+            "Top Row Songs": Randomizes Zelda's Lullaby,
+            Epona's Song, Saria's Song, Sun's Song,
+            Song of Time, and Song of Storms.
+
+            "Warp Songs": Randomizes Minuet of Forest,
+            Bolero of Fire, Serenade of Water, Requiem
+            of Spirit, Nocturne of Shadow, and Prelude
+            of Light.
+
+            "Frogs Ocarina Game": Randomizes the 14
+            notes of the final song of the Fabulous
+            Five Froggish Tenors.
             ''',
         shared         = True,
     )
@@ -3882,29 +4263,63 @@ class SettingInfos:
     )
 
     blue_fire_arrows = Checkbutton(
-        gui_text       = 'Blue Fire Arrows',
-        gui_tooltip    = '''\
+        gui_text            = 'Blue Fire Arrows',
+        gui_tooltip         = '''\
             Ice arrows gain the power of blue fire.
             They can be used to melt red ice
             and break the mud walls in Dodongo's Cavern.
         ''',
-        default        = False,
-        shared         = True,
+        default             = False,
+        disabled_default    = True,
+        gui_params          = {
+            "hide_when_disabled": True,
+        },
+        shared              = True,
     )
 
-    fix_broken_drops = Checkbutton(
-        gui_text       = 'Fix Broken Drops',
+    fix_broken_actors = Checkbutton(
+        gui_text       = 'Fix Broken Actors',
         gui_tooltip    = '''\
-            Enabling this fixes drops that are broken in the vanilla game.
+            Enabling this fixes drops and actors that are broken in the vanilla game.
 
             There is a deku shield drop from a pot in the Spirit Temple child
             side Anubis room that does not appear in the vanilla game, and
-            logic might require you to get a deku shield this way. There is a
+            logic might require you to get a deku shield this way.
+
+            There is a
             magic jar on top of the Gerudo Training Ground eye statue that does
             not always refill your magic in the vanilla game.
+
+            There are a bunch of enemies as well.
         ''',
+        default        = False,
         shared         = True,
+        disable        = { False: {'settings': ['dogs_anywhere']}}
     )
+
+    dogs_anywhere = Checkbutton (
+        gui_text      = 'Allow dogs anywhere',
+        gui_tooltip   = '''\
+            Allow dogs to follow link through all loading zones.
+            This has no actual impact to the game,
+            but you can bring Richard to the Ganon fight
+            if you so choose.
+        ''',
+        shared        = True,
+        gui_params     = {
+            "hide_when_disabled": True
+        }
+    )
+
+    #nnn_opt_out = Checkbutton(
+    #    gui_text      = 'Do not participate in No Deku Nut November',
+    #    gui_tooltip   = '''\
+    #        By enabling this you acknowledge that you are lame and are
+    #        declining to participate in No Deku Nut November.
+    #    ''',
+    #    shared        = True,
+    #    default       = False,
+    #)
 
     tcg_requires_lens = Checkbutton(
         gui_text       = 'Require Lens of Truth for Treasure Chest Game',
@@ -3969,9 +4384,38 @@ class SettingInfos:
             fail to generate, consider turning this option off.
         ''',
         shared         = True,
+    )
+
+    prevent_guay_respawns = Checkbutton(
+        gui_text       = 'Prevent guays from respawning',
+        gui_tooltip    = '''\
+            Enabling this prevents guays from respawning in enemy drop shuffle.
+            ''',
         gui_params     = {
-            'randomize_key': 'randomize_settings',
-        },
+            'hide_when_disabled' : True,
+        }
+    )
+
+    minimap_enemy_tracker = Checkbutton(
+        gui_text       = 'Enable enemy tracker (BETA)',
+        gui_tooltip    = '''\
+            In enemy drop shuffle, display enemies that have not been
+            checked on the minimap.
+
+            Only displays the enemies that are currently spawned.
+
+            Doesn't work perfectly for scenes like Kokiri Forest where
+            a single minimap is used across multiple rooms.
+
+            Will display in dungeons even if the Dungeon Map has
+            not been collected.
+
+            In scenes that don't have a minimap, it tends to draw
+            somewhere towards the bottom-middle of the screen.
+            ''',
+        gui_params     = {
+            'hide_when_disabled' : True,
+        }
     )
 
     item_pool_value = Combobox(
@@ -4417,8 +4861,26 @@ class SettingInfos:
             'randomize_key': 'randomize_all_cosmetics',
             'distribution':  [
                 ('Completely Random', 1),
-            ],
-        },
+            ]
+        }
+    )
+
+    extra_equip_colors = Checkbutton(
+        gui_text       = 'Randomize Extra Colors (Experimental)',
+        shared         = False,
+        cosmetic       = True,
+        gui_tooltip    = '''\
+            Randomize many other equipment and item colors.
+
+            More colors may be added to this setting in the future.
+        ''',
+        default        = False,
+        gui_params     = {
+            'randomize_key': 'randomize_all_cosmetics',
+            'distribution': [
+                (True, 1),
+            ]
+        }
     )
 
     heart_color = Combobox(
@@ -5255,6 +5717,17 @@ class SettingInfos:
         },
     )
 
+    sfx_link_adult_volume = Scale(
+        gui_text       = 'Adult Voice Volume',
+        shared         = False,
+        cosmetic       = True,
+        minimum        = 0,
+        maximum        = 100,
+        step           = 1,
+        default        = 100,
+        gui_tooltip    = 'Sets the volume for the voice SFX'
+    )
+
     sfx_link_child = Combobox(
         gui_text       = 'Child Voice',
         shared         = False,
@@ -5268,6 +5741,17 @@ class SettingInfos:
             "hide_when_disabled": True,
             "dynamic": True,
         },
+    )
+
+    sfx_link_child_volume = Scale(
+        gui_text       = 'Child Voice Volume',
+        shared         = False,
+        cosmetic       = True,
+        minimum        = 0,
+        maximum        = 100,
+        step           = 1,
+        default        = 100,
+        gui_tooltip    = 'Sets the volume for the voice SFX'
     )
 
     sfx_navi_overworld = Combobox(

@@ -112,12 +112,18 @@ RANDO_CONTEXT:
 .include "blue_fire_arrows.asm"
 .include "gerudo_guard.asm"
 .include "save.asm"
+.include "actor.asm"
 .include "drop_overrides/obj_mure3.asm"
 .include "drop_overrides/bg_haka_tubo.asm"
 .include "drop_overrides/bg_spot18_basket.asm"
 .include "drop_overrides/obj_comb.asm"
 .include "drop_overrides/en_wonderitem.asm"
-.include "actor.asm"
+.include "drop_overrides/enemy_drops.asm"
+.include "drop_overrides/ovl_en_bb.asm"
+.include "drop_overrides/ovl_en_crow.asm"
+.include "drop_overrides/ovl_en_skj.asm"
+.include "drop_overrides/en_kusa.asm"
+.include "drop_overrides/obj_mure2.asm"
 .include "rand_seed.asm"
 .include "messages.asm"
 .include "player_save_mask.asm"
@@ -132,6 +138,13 @@ RANDO_CONTEXT:
 .include "fairy_ocarina.asm"
 .include "en_dns.asm"
 .include "bg_gate_shutter.asm"
+.include "enemy_spawn_shuffle.asm"
+.include "minimap.asm"
+.include "collider_override.asm"
+.include "objects.asm"
+.include "player.asm"
+.include "en_ishi.asm"
+.include "big_poe.asm"
 
 .align 0x10
 .importobj "../build/bundle.o"
@@ -144,7 +157,7 @@ RANDO_CONTEXT:
 ;
 ; For possible proper fixes, see:
 ; https://discord.com/channels/274180765816848384/512048482677424138/1251961594380947587
-.skip 0x200
+.skip 0x300
 
 AUDIO_THREAD_MEM_START:
 .skip AUDIO_THREAD_MEM_SIZE

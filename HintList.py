@@ -215,7 +215,7 @@ def tokens_required_by_settings(world: World) -> int:
 # Hints required under certain settings
 conditional_always: dict[str, Callable[[World], bool]] = {
     'Market 10 Big Poes':           lambda world: world.settings.big_poe_count > 3 and 'big_poes' not in world.settings.misc_hints,
-    'Deku Theater Mask of Truth':   lambda world: not world.settings.complete_mask_quest and 'Mask of Truth' not in world.settings.shuffle_child_trade,
+    'Deku Theater Mask of Truth':   lambda world: not world.settings.complete_mask_quest and 'Mask of Truth' not in world.settings.shuffle_child_trade and 'mask_of_truth' not in world.settings.misc_hints,
     'Song from Ocarina of Time':    lambda world: stones_required_by_settings(world) < 2,
     'HF Ocarina of Time Item':      lambda world: stones_required_by_settings(world) < 2,
     'Sheik in Kakariko':            lambda world: medallions_required_by_settings(world) < 5,
@@ -223,6 +223,7 @@ conditional_always: dict[str, Callable[[World], bool]] = {
     'Kak 30 Gold Skulltula Reward': lambda world: tokens_required_by_settings(world) < 30 and '30_skulltulas' not in world.settings.misc_hints,
     'Kak 40 Gold Skulltula Reward': lambda world: tokens_required_by_settings(world) < 40 and '40_skulltulas' not in world.settings.misc_hints,
     'Kak 50 Gold Skulltula Reward': lambda world: tokens_required_by_settings(world) < 50 and '50_skulltulas' not in world.settings.misc_hints,
+    'Kak 100 Gold Skulltula Reward': lambda world: tokens_required_by_settings(world) < 100 and '100_skulltulas' not in world.settings.misc_hints,
     'ZR Frogs Ocarina Game':        lambda world: 'frogs2' not in world.settings.misc_hints,
     'LH Loach Fishing':             lambda world: world.settings.shuffle_loach_reward == 'vanilla',
 }
@@ -247,7 +248,7 @@ def rainbow_bridge_hint_kind(world: World) -> str:
 
 # Entrance hints required under certain settings
 conditional_entrance_always: dict[str, Callable[[World], bool]] = {
-    'Ganons Castle Grounds -> Ganons Castle Lobby': lambda world: rainbow_bridge_hint_kind(world) == 'always',
+    'Ganons Castle Ledge -> Ganons Castle Lobby': lambda world: rainbow_bridge_hint_kind(world) == 'always',
     'Ganons Castle Main -> Ganons Castle Tower': lambda world: world.settings.trials > 3 or (rainbow_bridge_hint_kind(world) == 'always' and not world.shuffle_special_dungeon_entrances),
 }
 
@@ -290,7 +291,7 @@ conditional_sometimes: dict[str, Callable[[World], bool]] = {
     'Twinrova Rewards':                         lambda world: world.settings.shuffle_dungeon_rewards not in ('vanilla', 'reward'),
 
     # Conditional entrance hints
-    'Ganons Castle Grounds -> Ganons Castle Lobby': lambda world: rainbow_bridge_hint_kind(world) != 'never',
+    'Ganons Castle Ledge -> Ganons Castle Lobby': lambda world: rainbow_bridge_hint_kind(world) != 'never',
     'Ganons Castle Main -> Ganons Castle Tower': lambda world: world.settings.trials > 0 or (rainbow_bridge_hint_kind(world) != 'never' and not world.shuffle_special_dungeon_entrances),
 }
 
@@ -551,6 +552,85 @@ hintTable: dict[str, tuple[list[str] | str, Optional[str], str | list[str]]] = {
     'Ocarina C right Button':                                   (["a middle note"], "the Ocarina C right Button", 'item'),
     'Fairy Drop':                                               (["an annoying companion", "Navi's cousin"], "a Stray Fairy", 'item'),
     'Nothing':                                                  (["emptiness", "loneliness"], "Nothing", 'item'),
+    'Fishing Rod':                                              (["a Fishing Rod"], "a Fishing Rod", 'item'),
+    'Fish (Child 6 lb)':                                        (["chum"], "a small fish (child)", 'item'),
+    'Fish (Child 8 lb)':                                        (["chum"], "a medium-sized fish (child)", 'item'),
+    'Fish (Child 10 lb)':                                       (["a LUNKER"], "a record setting fish (child)", 'item'),
+    'Fish (Adult 10 lb)':                                       (["chum"], "a small fish (adult)", 'item'),
+    'Fish (Adult 12 lb)':                                       (["chum"], "a medium-sized fish (adult)", 'item'),
+    'Fish (Adult 16 lb)':                                       (["a LUNKER"], "a record setting fish (adult)", 'item'),
+    'Hylian Loach':                                             (["a strange fish", "a Hylian Loach", 'item']),
+
+    'Stalfos Soul': (["the souls of the Stalfos"], None, 'item'),
+    'Octorok Soul': (["the souls of the Octorok"], None, 'item'),
+    'Wallmaster Soul': (["the souls of the Wallmaster"], None, 'item'),
+    'Dodongo Soul': (["the souls of the Dodongo"], None, 'item'),
+    'Keese Soul': (["the souls of the Keese"], None, 'item'),
+    'Tektite Soul': (["the souls of the Tektite"], None, 'item'),
+    'Peahat Soul': (["the souls of the Peahat"], None, 'item'),
+    'Lizalfos and Dinalfos Soul': (["the souls of the Lizalfos and Dinalfos"], None, 'item'),
+    'Gohma Larvae Soul': (["the souls of the Gohma Larvae"], None, 'item'),
+    'Shabom Soul': (["the souls of the Shabom"], None, 'item'),
+    'Baby Dodongo Soul': (["the souls of the Baby Dodongo"], None, 'item'),
+    'Biri and Bari Soul': (["the souls of the Biri and Bari"], None, 'item'),
+    'Tailpasaran Soul': (["the souls of the Tailpasaran"], None, 'item'),
+    'Skulltula Soul': (["the souls of the Skulltula"], None, 'item'),
+    'Torch Slug Soul': (["the souls of the Torch Slug"], None, 'item'),
+    'Moblin Soul': (["the souls of the Moblin"], None, 'item'),
+    'Armos Soul': (["the souls of the Armos"], None, 'item'),
+    'Deku Baba Soul': (["the souls of the Deku Baba"], None, 'item'),
+    'Deku Scrub Soul': (["the souls of the Deku Scrub"], None, 'item'),
+    'Bubble Soul': (["the souls of the Bubble"], None, 'item'),
+    'Beamos Soul': (["the souls of the Beamos"], None, 'item'),
+    'Floormaster Soul': (["the souls of the Floormaster"], None, 'item'),
+    'Redead and Gibdo Soul': (["the souls of the Redead and Gibdo"], None, 'item'),
+    'Skullwalltula Soul': (["the souls of the Skullwalltula"], None, 'item'),
+    'Flare Dancer Soul': (["the souls of the Flare Dancer"], None, 'item'),
+    'Dead hand Soul': (["the souls of the Dead hand"], None, 'item'),
+    'Shell Blade Soul': (["the souls of the Shell blade"], None, 'item'),
+    'Like Like Soul': (["the souls of the Like Like"], None, 'item'),
+    'Spike Enemy Soul': (["the souls of the Spike Enemy"], None, 'item'),
+    'Anubis Soul': (["the souls of the Anubis"], None, 'item'),
+    'Iron Knuckle Soul': (["the souls of the Iron Knuckle"], None, 'item'),
+    'Skull Kid Soul': (["the souls of the Skull Kid"], None, 'item'),
+    'Flying Pot Soul': (["the souls of the Flying Pot"], None, 'item'),
+    'Freezard Soul': (["the souls of the Freezard"], None, 'item'),
+    'Stinger Soul': (["the souls of the Stinger"], None, 'item'),
+    'Wolfos Soul': (["the souls of the Wolfos"], None, 'item'),
+    'Guay Soul': (["the souls of the Guay"], None, 'item'),
+    'Queen Gohma Soul': (["the soul of Queen Gohma"], None, 'item'),
+    'King Dodongo Soul': (["the soul of King Dodongo"], None, 'item'),
+    'Barinade Soul': (["the soul of Barinade"], None, 'item'),
+    'Phantom Ganon Soul': (["the soul of Phantom Ganon"], None, 'item'),
+    'Volvagia Soul': (["the soul of Volvagia"], None, 'item'),
+    'Morpha Soul': (["the soul of  Morpha"], None, 'item'),
+    'Bongo Bongo Soul': (["the soul of Bongo Bongo"], None, 'item'),
+    'Twinrova Soul': (["the souls of Twinrova"], None, 'item'),
+    'Jabu Jabu Tentacle Soul': (["the souls of the Jabu Jabu Tentacles"], None, 'item'),
+    'Ganondorf Soul': (["the soul of Ganondorf"], None, 'item'),
+    'Dark Link Soul': (["the soul of the Dark Link"], None, 'item'),
+    'Deku Tree Souls':              (["the enemy souls of Deku Tree"], None, 'item'),
+    'Dodongos Cavern Souls':        (["the enemy souls of Dodongos Cavern"], None, 'item'),
+    'Jabu Jabus Belly Souls':       (["the enemy souls of Jabu Jabu's Belly"], None, 'item'),
+    'Forest Temple Souls':          (["the enemy souls of Forest Temple"], None, 'item'),
+    'Fire Temple Souls':            (["the enemy souls of Fire Temple"], None, 'item'),
+    'Water Temple Souls':           (["the enemy souls of Water Temple"], None, 'item'),
+    'Shadow Temple Souls':          (["the enemy souls of Shadow Temple"], None, 'item'),
+    'Spirit Temple Souls':          (["the enemy souls of Spirit Temple"], None, 'item'),
+    'Bottom of the Well Souls':     (["the enemy souls of Bottom of the Well"], None, 'item'),
+    'Ice Cavern Souls':             (["the enemy souls of Ice Cavern"], None, 'item'),
+    'Gerudo Training Ground Souls': (["the enemy souls of Gerudo Training Ground"], None, 'item'),
+    'Ganons Castle Souls':          (["the enemy souls of Ganon's Castle"], None, 'item'),
+    'Forest Area Souls':            (["the enemy souls of the Forest region"], None, 'item'),
+    'Hyrule Field Souls':           (["the enemy souls of Hyrule Field"], None, 'item'),
+    'Lake Hylia Souls':             (["the enemy souls of Lake Hylia"], None, 'item'),
+    'Gerudo Area Souls':            (["the enemy souls of the Gerudo region"], None, 'item'),
+    'Market Area Souls':            (["the enemy souls of Market"], None, 'item'),
+    'Kakariko Area Souls':          (["the enemy souls of Kakariko Village"], None, 'item'),
+    'Goron Area Souls':             (["the enemy souls of the Goron region"], None, 'item'),
+    'Zora Area Souls':              (["the enemy souls of the Zora region"], None, 'item'),
+    'Lon Lon Ranch Souls':          (["the enemy souls of Lon Lon Ranch"], None, 'item'),
+    'Grottos Souls':                (["the enemy souls of the Grottos", None, 'item']),
 
     'ZR Frogs Ocarina Game':                                       (["an #amphibian feast# yields", "the #croaking choir's magnum opus# awards", "the #froggy finale# yields"], "the final reward from the #Frogs of Zora's River# is", ['overworld', 'sometimes']),
     'KF Links House Cow':                                          ("the #bovine bounty of a horseback hustle# gifts", "#Malon's obstacle course# leads to", 'always'),
@@ -569,6 +649,7 @@ hintTable: dict[str, tuple[list[str] | str, Optional[str], str | list[str]]] = {
     'Deku Theater Mask of Truth':                                  ("showing a #truthful eye to the crowd# rewards", "showing the #Mask of Truth in the Deku Theater# rewards", ['overworld', 'sometimes']),
     'HF Ocarina of Time Item':                                     ("the #treasure thrown by Princess Zelda# is", None, ['overworld', 'sometimes']),
     'DMT Biggoron':                                                ("#Biggoron# crafts", "showing the #Claim Check to Biggoron# rewards", ['overworld', 'sometimes']),
+    'Kak 100 Gold Skulltula Reward':                               (["#100 bug badges# rewards", "#100 spider souls# yields", "#100 auriferous arachnids# lead to"], "slaying #100 Gold Skulltulas# reveals", ['overworld', 'sometimes']),
     'Kak 50 Gold Skulltula Reward':                                (["#50 bug badges# rewards", "#50 spider souls# yields", "#50 auriferous arachnids# lead to"], "slaying #50 Gold Skulltulas# reveals", ['overworld', 'sometimes']),
     'Kak 40 Gold Skulltula Reward':                                (["#40 bug badges# rewards", "#40 spider souls# yields", "#40 auriferous arachnids# lead to"], "slaying #40 Gold Skulltulas# reveals", ['overworld', 'sometimes']),
     'Kak 30 Gold Skulltula Reward':                                (["#30 bug badges# rewards", "#30 spider souls# yields", "#30 auriferous arachnids# lead to"], "slaying #30 Gold Skulltulas# reveals", ['overworld', 'sometimes']),
@@ -633,7 +714,7 @@ hintTable: dict[str, tuple[list[str] | str, Optional[str], str | list[str]]] = {
     'Shadow Temple MQ Stalfos Room Chest':                         ("near an #empty pedestal within the house of the dead# lies", "#stalfos in the Shadow Temple# guard", ['dungeon', 'sometimes']),
     'Ice Cavern Iron Boots Chest':                                 ("a #monster in a frozen cavern# guards", "the #final treasure of Ice Cavern# is", ['dungeon', 'sometimes']),
     'Ice Cavern MQ Iron Boots Chest':                              ("a #monster in a frozen cavern# guards", "the #final treasure of Ice Cavern# is", ['dungeon', 'sometimes']),
-    'Ganons Castle Shadow Trial Golden Gauntlets Chest':           ("#deep in the test of darkness# lies", "a #like-like in Ganon's Shadow Trial# guards", ['dungeon', 'sometimes']),
+    'Ganons Castle Shadow Trial Golden Gauntlets Chest':           ("#deep in the test of darkness# lies", "a #Like Like in Ganon's Shadow Trial# guards", ['dungeon', 'sometimes']),
     'Ganons Castle MQ Shadow Trial Eye Switch Chest':              ("#deep in the test of darkness# lies", "shooting an #eye switch in Ganon's Shadow Trial# reveals", ['dungeon', 'sometimes']),
 
     'Deku Theater Rewards':                                        ("the #Skull Mask and Mask of Truth# reward...^", None, 'dual'),
@@ -706,7 +787,7 @@ hintTable: dict[str, tuple[list[str] | str, Optional[str], str | list[str]]] = {
     'ZD Chest':                                                    ("fire #beyond a waterfall# reveals", None, 'exclude'),
     'Graveyard Dampe Race Hookshot Chest':                         ("a chest hidden by a #speedy spectre# holds", "#dead Dampé's first prize# is", 'exclude'),
     'GF Chest':                                                    ("on a #rooftop in the desert# lies", None, 'exclude'),
-    'Kak Redead Grotto Chest':                                     ("#zombies beneath the earth# guard", None, 'exclude'),
+    'Kak ReDead Grotto Chest':                                     ("#zombies beneath the earth# guard", None, 'exclude'),
     'SFM Wolfos Grotto Chest':                                     ("#wolves beneath the earth# guard", None, 'exclude'),
     'HF Near Market Grotto Chest':                                 ("a #hole in a field near a drawbridge# holds", None, 'exclude'),
     'HF Southeast Grotto Chest':                                   ("a #hole amongst trees in a field# holds", None, 'exclude'),
@@ -852,7 +933,7 @@ hintTable: dict[str, tuple[list[str] | str, Optional[str], str | list[str]]] = {
     'Forest Temple MQ Compass Chest':                              ("#Beth# guards", "a #blue ghost# guards", 'exclude'),
     'Forest Temple MQ Falling Ceiling Room Chest':                 ("beneath a #checkerboard falling ceiling# lies", None, 'exclude'),
     'Forest Temple MQ Basement Chest':                             ("#revolving walls# in the Forest Temple conceal", None, 'exclude'),
-    'Forest Temple MQ Redead Chest':                               ("deep in the forest #undead guard a chest# containing", None, 'exclude'),
+    'Forest Temple MQ ReDead Chest':                               ("deep in the forest #undead guard a chest# containing", None, 'exclude'),
 
     'Fire Temple Near Boss Chest':                                 ("#near a dragon# is", None, 'exclude'),
     'Fire Temple Flare Dancer Chest':                              ("the #Flare Dancer behind a totem# guards", None, 'exclude'),
@@ -1403,7 +1484,7 @@ hintTable: dict[str, tuple[list[str] | str, Optional[str], str | list[str]]] = {
     'Zoras Fountain -> Jabu Jabus Belly Beginning':             ("inside #Jabu Jabu#, one can find", None, 'entrance'),
     'Kakariko Village -> Bottom of the Well':                   ("a #village well# leads to", None, 'entrance'),
 
-    'Ganons Castle Grounds -> Ganons Castle Lobby':             ("the #rainbow bridge# leads to", None, 'entrance'),
+    'Ganons Castle Ledge -> Ganons Castle Lobby':               ("the #rainbow bridge# leads to", None, 'entrance'),
     'Ganons Castle Main -> Ganons Castle Tower':                ("a #castle barrier# protects the way to", "#Ganon's trials# protect the way to", 'entrance'),
 
     'KF Links House':                                           ("Link's House", None, 'region'),
@@ -1456,7 +1537,7 @@ hintTable: dict[str, tuple[list[str] | str, Optional[str], str | list[str]]] = {
     'HF Tektite Grotto':                                        ("a pool guarded by a #Tektite#", None, 'region'),
     'HF Near Kak Grotto':                                       ("a #Big Skulltula# guarding a Gold one", None, 'region'),
     'HF Cow Grotto':                                            ("a grotto full of #spider webs#", None, 'region'),
-    'Kak Redead Grotto':                                        ("#ReDeads# guarding a chest", None, 'region'),
+    'Kak ReDead Grotto':                                        ("#ReDeads# guarding a chest", None, 'region'),
     'SFM Wolfos Grotto':                                        ("#Wolfos# guarding a chest", None, 'region'),
     'GV Octorok Grotto':                                        ("an #Octorok# guarding a rich pool", None, 'region'),
     'Deku Theater':                                             ("the #Lost Woods Stage#", None, 'region'),
@@ -1743,7 +1824,6 @@ hintTable: dict[str, tuple[list[str] | str, Optional[str], str | list[str]]] = {
     'ganonBK_triforce':                                         ("given to the Hero once the #Triforce# is completed", None, 'ganonBossKey'),
 
     'Spiritual Stone Text Start':                               ("3 Spiritual Stones found in Hyrule...", None, 'altar'),
-    'Child Altar Text End':                                     ("\x13\x07Ye who may become a Hero...&Stand with the Ocarina and&play the Song of Time.", None, 'altar'),
     'Adult Altar Text Start':                                   ("When evil rules all, an awakening&voice from the Sacred Realm will&call those destined to be Sages,&who dwell in the \x05\x41five temples\x05\x40.", None, 'altar'),
     'Adult Altar Text End':                                     ("Together with the Hero of Time,&the awakened ones will bind the&evil and return the light of peace&to the world...", None, 'altar'),
 
@@ -1875,6 +1955,7 @@ misc_location_hint_table: dict[str, dict[str, Any]] = {
         'item_location': 'Kak 10 Gold Skulltula Reward',
         'location_text': "Yeaaarrgh! I'm cursed!! Please save me by destroying \x05\x4110 Spiders of the Curse\x05\x40 and I will give you \x05\x42{item}\x05\x40.",
         'location_fallback': "Yeaaarrgh! I'm cursed!!",
+        'text_style': 0x23,
     },
     '20_skulltulas': {
         'id': 0x9005,
@@ -1882,6 +1963,7 @@ misc_location_hint_table: dict[str, dict[str, Any]] = {
         'item_location': 'Kak 20 Gold Skulltula Reward',
         'location_text': "Yeaaarrgh! I'm cursed!! Please save me by destroying \x05\x4120 Spiders of the Curse\x05\x40 and I will give you \x05\x42{item}\x05\x40.",
         'location_fallback': "Yeaaarrgh! I'm cursed!!",
+        'text_style': 0x23,
     },
     '30_skulltulas': {
         'id': 0x9006,
@@ -1889,6 +1971,7 @@ misc_location_hint_table: dict[str, dict[str, Any]] = {
         'item_location': 'Kak 30 Gold Skulltula Reward',
         'location_text': "Yeaaarrgh! I'm cursed!! Please save me by destroying \x05\x4130 Spiders of the Curse\x05\x40 and I will give you \x05\x42{item}\x05\x40.",
         'location_fallback': "Yeaaarrgh! I'm cursed!!",
+        'text_style': 0x23,
     },
     '40_skulltulas': {
         'id': 0x9007,
@@ -1896,6 +1979,7 @@ misc_location_hint_table: dict[str, dict[str, Any]] = {
         'item_location': 'Kak 40 Gold Skulltula Reward',
         'location_text': "Yeaaarrgh! I'm cursed!! Please save me by destroying \x05\x4140 Spiders of the Curse\x05\x40 and I will give you \x05\x42{item}\x05\x40.",
         'location_fallback': "Yeaaarrgh! I'm cursed!!",
+        'text_style': 0x23,
     },
     '50_skulltulas': {
         'id': 0x9008,
@@ -1903,6 +1987,15 @@ misc_location_hint_table: dict[str, dict[str, Any]] = {
         'item_location': 'Kak 50 Gold Skulltula Reward',
         'location_text': "Yeaaarrgh! I'm cursed!! Please save me by destroying \x05\x4150 Spiders of the Curse\x05\x40 and I will give you \x05\x42{item}\x05\x40.",
         'location_fallback': "Yeaaarrgh! I'm cursed!!",
+        'text_style': 0x23,
+    },
+    '100_skulltulas': {
+        'id': 0x9009,
+        'hint_location': '100 Skulltulas Reward Hint',
+        'item_location': 'Kak 100 Gold Skulltula Reward',
+        'location_text': "Yeaaarrgh! I'm cursed!! Please save me by destroying \x05\x41100 Spiders of the Curse\x05\x40 and I will give you \x05\x42{item}\x05\x40.",
+        'location_fallback': "Yeaaarrgh! I'm cursed!!",
+        'text_style': 0x23,
     },
     'frogs2': {
         'id': 0x022E,
@@ -1910,6 +2003,21 @@ misc_location_hint_table: dict[str, dict[str, Any]] = {
         'item_location': 'ZR Frogs Ocarina Game',
         'location_text': "Some frogs holding \x05\x42{item}\x05\x40 are looking at you from underwater...",
         'location_fallback': "Some frogs are looking at you from underwater...",
+        'text_style': 0x23,
+    },
+    'skull_mask': {
+        'id': 0x0344,
+        'hint_location': 'Deku Theater Skull Mask Hint',
+        'item_location': 'Deku Theater Skull Mask',
+        'location_text': 'Wearing the \x05\x41Skull Mask\x05\x40 will reward you with \x05\x42{item}\x05\x40.',
+        'text_style': 0x13,
+    },
+    'mask_of_truth': {
+        'id': 0x0344,
+        'hint_location': 'Deku Theater Mask of Truth Hint',
+        'item_location': 'Deku Theater Mask of Truth',
+        'location_text': 'Wearing the \x05\x41Mask of Truth\x05\x40 will reward you with \x05\x42{item}\x05\x40.',
+        'text_style': 0x13,
     },
     'big_poes': {
         'id': 0x70F5,
@@ -1917,6 +2025,19 @@ misc_location_hint_table: dict[str, dict[str, Any]] = {
         'item_location': 'Market 10 Big Poes',
         'location_text': "\x08Hey, young man. What's happening \x01today? Do you want\x01\x05\x41{item}\x05\x40?\x04\x1AIf you earn \x05\x41{poe_points} points\x05\x40, you'll\x01be a happy man! Heh heh.\x04\x08Your card now has \x05\x45\x1E\x01 \x05\x40points.\x01Come back again!\x01Heh heh heh!\x02",
         'location_fallback': "\x08Hey, young man. What's happening \x01today? If you have a \x05\x41Poe\x05\x40, I will \x01buy it.\x04\x1AIf you earn \x05\x41{poe_points} points\x05\x40, you'll\x01be a happy man! Heh heh.\x04\x08Your card now has \x05\x45\x1E\x01 \x05\x40points.\x01Come back again!\x01Heh heh heh!\x02",
+        'text_style': 0x03,
+    },
+}
+
+# Adds capability for dual misc hints. Only used when neither or both hints are enabled, uses corresponding misc_location_hint_table entries if only one is enabled.
+# 'location_text' is the text for the dual hint where item_1 is the item from item_location_0 and item_2 is the item from item_location_1.
+# 'location_fallback' is the text to handle if neither misc hint is turned on.
+misc_dual_hint_table: dict[str, dict[str, Any]] = {
+    ('skull_mask', 'mask_of_truth'): {
+        'id': 0x0344,
+        'location_text': '\x01Wearing the \x05\x41Skull Mask\x05\x40 will reward you with \x05\x42{item_1}\x05\x40.\x04Wearing the \x05\x41Mask of Truth\x05\x40 will reward you with \x05\x42{item_2}\x05\x40.',
+        'location_fallback': '\x05\x42\x06\x3dForest Stage\x04\x01\x05\x40\x06\x14We are waiting to see your\x01\x06\x32beautiful face!\x01\x06\x28Win fabulous prizes!',
+        'text_style': 0x13,
     },
 }
 

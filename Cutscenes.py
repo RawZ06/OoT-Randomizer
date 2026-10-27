@@ -230,6 +230,10 @@ def patch_cutscenes(rom: Rom, songs_as_items: bool, settings: Settings) -> None:
     patch_cutscene_length(rom, 0x1FC8550, 84) # West
     patch_cutscene_length(rom, 0x1FC8B30, 42) # Front gates
 
+    # Lakeside Professor preparing the frog before giving the eyedrops.
+    # Cut the 120 frames timer to 20 to let him cook.
+    rom.write_byte(0xE2C7F7, 0x14)
+
     # Speed learning Minuet of Forest
     if songs_as_items:
         delete_cutscene(rom, 0x020AFF80)
@@ -351,7 +355,7 @@ def patch_cutscenes(rom: Rom, songs_as_items: bool, settings: Settings) -> None:
 
     # This cutscene is not written in the shadow temple scene or in the boat actor, but directly in z_onepointdemo.c instead.
     # So not compatible with our functions.
-    if settings.fast_shadow_boat:
+    if settings.fast_shadow_boat and not settings.shuffle_enemy_drops:
         # bg_haka_ship changes to make the boat go faster.
         rom.write_int16(0xD1923E, 0x0000) # Timer to start moving
         rom.write_int16(0xD19426, 0x4348) # Speed x10

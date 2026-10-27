@@ -13,7 +13,7 @@
 COSMETIC_CONTEXT:
 
 COSMETIC_FORMAT_VERSION:
-.word 0x1F073FE2
+.word 0x1F073FE3
 CFG_MAGIC_COLOR:
 .halfword 0x0000, 0x00C8, 0x0000
 CFG_HEART_COLOR:
@@ -102,6 +102,16 @@ CFG_SONG_NAME_STATE:
 .area 0xA5A, 0
 CFG_SONG_NAMES:
 .endarea
+
+.align 4
+
+CFG_ADULT_VOLUME:
+.word 0
+CFG_CHILD_VOLUME:
+.word 0
+
+; End Cosmetics Context
+
 CFG_SHOW_SETTING_INFO:
 .byte 0x00
 
@@ -111,7 +121,6 @@ CFG_CUSTOM_MESSAGE_1:
 .area 0x20, 0
 CFG_CUSTOM_MESSAGE_2:
 .endarea
-
 .align 4
 
 ; Version string
@@ -153,7 +162,7 @@ INITIAL_SAVE_DATA:
 EXTENDED_INITIAL_SAVE_DATA:
 .endarea
 
-.area 0x110, 0 ; size must be at least 8 * ((max object_id parameter Patches.add_to_extended_object_table is called with) - 0x192)
+.area 0x130, 0 ; size must be at least 8 * ((max object_id parameter Patches.add_to_extended_object_table is called with) - 0x192)
 EXTENDED_OBJECT_TABLE:
 .endarea
 
@@ -197,11 +206,13 @@ HIDEOUT_SHUFFLED:
 .byte 0x00
 FAST_BUNNY_HOOD_ENABLED:
 .byte 0x00
-FIX_BROKEN_DROPS:
+CFG_OBJECT_SYSTEM:
 .byte 0x00
 SPOILER_AVAILABLE:
 .byte 0x00
 PLANDOMIZER_USED:
+.byte 0x00
+ENEMY_DROP_SHUFFLE:
 .byte 0x00
 POTCRATE_TEXTURES_MATCH_CONTENTS:
 .byte 0x00
@@ -216,6 +227,10 @@ CUSTOM_KEY_MODELS:
 SHUFFLE_OCARINA_BUTTONS:
 .byte 0x00
 EPONAS_SONG_NOTES:
+.halfword 0x0000
+CFG_PREVENT_GUAY_RESPAWNS:
+.byte 0x00
+CFG_MINIMAP_ENEMY_TRACKER:
 .byte 0x00
 CHEST_GOLD_TEXTURE:
 .byte 0x01
@@ -258,13 +273,19 @@ REWARDS_AS_ITEMS:
 .area 14, 0x00
 CFG_DUNGEON_PRECOMPLETED:
 .endarea
+SHUFFLE_FISHIES:
+.byte 0x00
+CFG_BOULDER_SHUFFLE:
+.byte 0x00
+DOT_CONDITION:
+.byte 0x01
 .align 4
 
 ; These configuration values are given fixed addresses to aid auto-trackers.
 ; Any changes made here should be documented in Notes/auto-tracker-ctx.md
 AUTO_TRACKER_CONTEXT:
 AUTO_TRACKER_VERSION:
-.word 5 ; Increment this if the auto-tracker context layout changes
+.word 6 ; Increment this if the auto-tracker context layout changes
 
 CFG_DUNGEON_INFO_ENABLE:
 .word 0
@@ -330,5 +351,19 @@ CFG_ADULT_TRADE_SHUFFLE:
 .byte 0x00
 CFG_CHILD_TRADE_SHUFFLE:
 .byte 0x00
+
+.area 14, 0x00
+CFG_DUNGEON_BOSS_INFO:
+.endarea
+; First two bytes determine if dungeons and bosses are shuffled or mixed (0 : not shuffled, 1 : shuffled in their pool, 2 : mixed)
+; Next 12 bytes say if the dungeon in the i-th entrance has a map
+
+.area 12 * 0x9, 0x00
+CFG_DUNGEON_ENTRANCES:
+.endarea
+.area 21 * 0x9, 0x00
+CFG_BOSSES:
+.endarea
+; Bosses are listed twice, first 12 are sorted by the same order as the dungeon entrances (including the 3 with no bosses), then 9 in the usual dungeon order.
 
 .align 4
